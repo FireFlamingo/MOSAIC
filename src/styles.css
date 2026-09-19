@@ -652,6 +652,15 @@ input[type="range"] {
   outline: 2px solid var(--green);
   outline-offset: 3px;
 }
+.refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 8px;
+  color: inherit;
+}
 .switch i {
   height: 20px;
   width: 34px;

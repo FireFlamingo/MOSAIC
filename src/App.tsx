@@ -11,6 +11,7 @@ import {
   Menu,
   MoreHorizontal,
   Plus,
+  RefreshCw,
   Search,
   Settings2,
   ShieldCheck,
@@ -130,7 +131,7 @@ export default function App() {
         if (items.length) {
           const first = items[0],
             last = items[items.length - 1];
-          if (e.shiftKey && document.activeElement === first) {
+          if (e.shiftKey && (document.activeElement === first || document.activeElement === box)) {
             e.preventDefault();
             last.focus();
           } else if (!e.shiftKey && document.activeElement === last) {
@@ -152,7 +153,7 @@ export default function App() {
           (type === "all" || e.request.type === type) &&
           (decision === "all" || resolved(e) === decision) &&
           (active !== "Review queue" || resolved(e) === "review") &&
-          `${e.request.name} ${e.request.source}`
+          `${e.request.name} ${e.request.source ?? ''} ${e.request.sessionId}`
             .toLowerCase()
             .includes(query.toLowerCase()),
       ),
@@ -390,6 +391,15 @@ export default function App() {
               <i />
               {online ? "Gateway online" : "Gateway offline"}
             </span>
+            <button
+              className="refresh-btn"
+              aria-label="Refresh gateway state"
+              title="Refresh observations and gateway status"
+              disabled={loading || busy}
+              onClick={loadState}
+            >
+              <RefreshCw size={18} />
+            </button>
             <button
               className="icon-btn"
               aria-label="Open policy settings"
