@@ -71,3 +71,5 @@ This is a single-user local prototype. Keep it bound to loopback. It has no user
 The larger brief's 200–500-case incident corpus, external baseline comparisons, learned scoring, paper claims, and integration with multiple coding agents are deferred. No detection-rate or novelty claims are made by this MVP.
 
 Local state lives under `data/` and is excluded from Git. Keep audit exports private if requests contain confidential content.
+
+Verify an exported evaluation chain with `npm run verify:audit -- path/to/mosaic-audit.json`. This detects broken links or changed evaluation contents. It does not authenticate the author, detect a complete rewrite, or verify the separately recorded review and policy events. The rule definitions are documented in [docs/SCORING.md](docs/SCORING.md).

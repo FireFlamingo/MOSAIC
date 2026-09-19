@@ -8,6 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "start": "tsx server/index.ts",
     "test": "tsx --test tests/*.test.ts",
+    "verify:audit": "tsx scripts/verify-audit.ts",
     "check": "npm run test && npm run build"
   },
   "dependencies": { "express": "^5.1.0", "lucide-react": "^0.468.0", "react": "^19.0.0", "react-dom": "^19.0.0" },

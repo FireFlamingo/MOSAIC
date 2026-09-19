@@ -13,7 +13,7 @@ const knownPackages = [
 ];
 
 const dangerousPermissions = new Set([
-  'filesystem:write', 'filesystem:read', 'network', 'network:all', 'process:spawn',
+  'filesystem:write', 'filesystem:read', 'network', 'network:all', 'network:egress', 'process:spawn',
   'shell', 'secrets:read', 'clipboard:read', 'browser:control',
 ]);
 
@@ -23,6 +23,10 @@ function signal(id: string, label: string, points: number, reason: string): Sign
 
 function normalizeName(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function packageBaseName(name: string): string {
+  return name.replace(/@v?\d+(?:\.\d+){0,2}(?:[-+][a-z0-9.-]+)?$/i, '');
 }
 
 function levenshtein(left: string, right: string): number {
@@ -72,7 +76,7 @@ export function evaluateRisk(
     signals.push(signal('metadata-unverified', 'Existence unverified', 8, 'No verified existence result was supplied; this is not treated as confirmation.'));
   }
 
-  const similar = similarKnownPackage(request.name);
+  const similar = request.type === 'package' ? similarKnownPackage(packageBaseName(request.name)) : undefined;
   if (similar) {
     signals.push(signal('name-lookalike', 'Known-package lookalike', 26, `“${request.name}” is unusually similar to the known package “${similar}”.`));
   }
@@ -96,12 +100,32 @@ export function evaluateRisk(
     if (pattern.test(content)) signals.push(signal(id, label, points, reason));
   }
 
+  if ((request.type === 'skill' || request.type === 'mcp') && /(?:ignore (?:all )?(?:previous|prior) instructions|disable (?:the )?security|bypass (?:the )?security)/i.test(content)) {
+    signals.push(signal('instruction-override', 'Instruction override', 22, 'Static instructions attempt to override prior guidance or disable security controls.'));
+  }
+
+  if (request.type === 'url') {
+    const candidate = request.source ?? request.name;
+    try {
+      const parsed = new URL(candidate);
+      if (parsed.protocol !== 'https:') signals.push(signal('url-not-https', 'Non-HTTPS URL', 12, `URL uses ${parsed.protocol || 'an unknown'} protocol.`));
+      const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+      if (host === 'localhost' || host.endsWith('.localhost') || host === '::1' || /^127(?:\.\d{1,3}){3}$/.test(host) || /^10(?:\.\d{1,3}){3}$/.test(host) || /^192\.168(?:\.\d{1,3}){2}$/.test(host) || /^169\.254(?:\.\d{1,3}){2}$/.test(host) || /^172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}$/.test(host) || /^f[cd][0-9a-f:]*$/i.test(host) || /^fe[89ab][0-9a-f:]*$/i.test(host)) {
+        signals.push(signal('url-local-host', 'Local or private host', 20, 'URL targets a local or private network host.'));
+      }
+    } catch {
+      signals.push(signal('url-invalid', 'Invalid URL', 20, 'URL could not be parsed locally.'));
+    }
+  }
+
   if (policy.correlationEnabled) {
-    const recent = history.slice(-20).filter((evaluation) =>
-      evaluation.request.sessionId === request.sessionId
-      && evaluation.request.type !== request.type
-      && evaluation.decision !== 'allow',
-    );
+    const recent = history
+      .filter((evaluation) => evaluation.request.sessionId === request.sessionId)
+      .slice(-20)
+      .filter((evaluation) =>
+        evaluation.request.type !== request.type
+        && evaluation.decision !== 'allow',
+      );
     if (recent.length) signals.push(signal('session-correlation', 'Session correlation', Math.min(18, recent.length * 6), `${recent.length} prior non-allowed artifact(s) of a different type occurred in this session.`));
     const nameMatch = recent.some((evaluation) => normalizeName(evaluation.request.name) === normalizeName(request.name));
     if (nameMatch) signals.push(signal('name-correlation', 'Cross-artifact name reuse', 12, 'A prior non-allowed artifact of another type used the same normalized name.'));
