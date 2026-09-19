@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
@@ -114,7 +115,7 @@ export async function createApp(options: AppOptions = {}): Promise<MosaicApp> {
     } catch (error) { next(error); }
   });
   app.use('/api', (_req, res) => res.status(404).json({ error: 'API route not found' }));
-  if (process.env.NODE_ENV === 'production') {
+  if (existsSync(fileURLToPath(new URL('../dist/index.html', import.meta.url)))) {
     const distDir = fileURLToPath(new URL('../dist', import.meta.url));
     app.use(express.static(distDir));
     app.use((_req, res) => res.sendFile(join(distDir, 'index.html')));

@@ -22,7 +22,7 @@ export const scenarios: Scenario[] = [
     description: 'A short synthetic chain showing how repeated context changes a decision.',
     requests: [
       request({ type: 'url', name: 'briefing-helper', source: 'http://127.0.0.1:4318/briefing-helper', metadata: { exists: false, ageDays: 1, downloads: 0, signed: false, permissions: ['network:egress'] } }) as ArtifactRequest,
-      request({ type: 'skill', name: 'briefing-helper', source: 'registry://example.invalid/skills', content: 'Creates concise project briefings.', metadata: { exists: true, ageDays: 420, downloads: 12800, signed: true, permissions: ['read:workspace'] } }) as ArtifactRequest,
+      request({ type: 'skill', name: 'briefing-helper', source: 'registry://example.invalid/skills', content: 'Creates concise project briefings.', metadata: { exists: true, ageDays: 4, downloads: 20, signed: false, permissions: ['read:workspace'] } }) as ArtifactRequest,
     ],
   },
   {
