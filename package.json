@@ -1,0 +1,15 @@
+{
+  "name": "mosaic-agent-firewall",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n api,web \"tsx watch server/index.ts\" \"vite --host 127.0.0.1 --port 4317 --strictPort\"",
+    "build": "tsc --noEmit && vite build",
+    "start": "tsx server/index.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "check": "npm run test && npm run build"
+  },
+  "dependencies": { "express": "^5.1.0", "lucide-react": "^0.468.0", "react": "^19.0.0", "react-dom": "^19.0.0" },
+  "devDependencies": { "@types/express": "^5.0.0", "@types/node": "^22.0.0", "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0", "@vitejs/plugin-react": "^4.3.4", "concurrently": "^9.1.2", "tsx": "^4.19.2", "typescript": "~5.7.3", "vite": "^6.1.0" }
+}
