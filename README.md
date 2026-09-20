@@ -30,6 +30,8 @@ Open http://127.0.0.1:4318. Run `npm run check` for automated tests and the prod
 - Persist evaluations and export a hash-linked audit trail.
 - Replay small synthetic scenarios through the actual evaluation API.
 
+The console includes an interactive session trace, review inbox, searchable paginated request stream, evidence inspector, and a threshold preview. See [the demonstration guide](docs/DEMO.md) for a short walkthrough.
+
 The initial observations and scenarios are **synthetic demonstrations**, not traffic from connected agents or a validated research benchmark. They run locally and never execute submitted artifacts.
 
 ## Evaluate from an agent integration

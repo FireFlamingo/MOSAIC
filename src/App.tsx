@@ -1,987 +1,1094 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Activity,
   ArrowDownToLine,
-  Boxes,
-  Check,
+  ArrowRight,
+  ArrowUpRight,
+  CheckCheck,
+  ChevronDown,
+  ChevronLeft,
   ChevronRight,
+  Circle,
   CircleAlert,
-  ClipboardCheck,
-  FileSearch,
-  KeyRound,
+  Fingerprint,
+  GitBranch,
+  Layers3,
   Menu,
-  MoreHorizontal,
+  Play,
   Plus,
   RefreshCw,
   Search,
   Settings2,
   ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
+  Terminal,
   X,
 } from "lucide-react";
 import type {
   AppState,
   ArtifactRequest,
-  ArtifactType,
   Decision,
   Evaluation,
   Policy,
   Scenario,
 } from "../shared/types";
-
-const typeIcons: Record<ArtifactType, string> = {
-  package: "PKG",
-  skill: "SKL",
-  mcp: "MCP",
-  url: "URL",
-};
-const nav = [
-  { label: "Overview", icon: Boxes },
-  { label: "Requests", icon: FileSearch },
-  { label: "Review queue", icon: ClipboardCheck },
-  { label: "Policy", icon: Settings2 },
+import {
+  ArtifactIcon,
+  Badge,
+  Boundary,
+  correlation,
+  decisionIcon,
+  decisionLabel,
+  INITIAL_POLICY,
+  latest,
+  resolved,
+  shortSession,
+  time,
+  TYPES,
+  typeIcon,
+  typeLabel,
+} from "./ui";
+import { EvaluationDialog } from "./EvaluationDialog";
+import { PolicyEditor } from "./PolicyEditor";
+type View = "Overview" | "Requests" | "Review queue" | "Policy";
+const views = [
+  { label: "Overview" as View, icon: Layers3 },
+  { label: "Requests" as View, icon: Activity },
+  { label: "Review queue" as View, icon: ShieldCheck },
+  { label: "Policy" as View, icon: SlidersHorizontal },
 ];
 
-const tone = (d: Decision) => `badge ${d}`;
-function date(t: string) {
-  return new Intl.DateTimeFormat("en", {
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(t));
-}
 export default function App() {
   const [state, setState] = useState<AppState>({
-      evaluations: [],
-      policy: {
-        reviewThreshold: 45,
-        denyThreshold: 72,
-        correlationEnabled: true,
-      },
-      scenarios: [],
-    }),
-    [loading, setLoading] = useState(true),
-    [toast, setToast] = useState(""),
-    [active, setActive] = useState("Overview");
+    evaluations: [],
+    policy: INITIAL_POLICY,
+    scenarios: [],
+  });
+  const [view, setView] = useState<View>("Overview");
+  const [loading, setLoading] = useState(true),
+    [online, setOnline] = useState(false),
+    [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState(""),
+    [synced, setSynced] = useState("");
   const [query, setQuery] = useState(""),
     [type, setType] = useState("all"),
     [decision, setDecision] = useState("all"),
-    [selected, setSelected] = useState<Evaluation | null>(null),
+    [page, setPage] = useState(0);
+  const [session, setSession] = useState(""),
+    [sessionFilter, setSessionFilter] = useState("");
+  const [selected, setSelected] = useState<Evaluation | null>(null),
     [modal, setModal] = useState(false),
-    [menu, setMenu] = useState(false),
+    [scenarioMenu, setScenarioMenu] = useState(false),
     [mobile, setMobile] = useState(false);
-  const [policy, setPolicy] = useState<Policy>({
-    reviewThreshold: 45,
-    denyThreshold: 72,
-    correlationEnabled: true,
-  });
-  const [online, setOnline] = useState(false),
-    [busy, setBusy] = useState(false);
-  const dialog = useRef<HTMLDivElement>(null),
-    drawer = useRef<HTMLElement>(null),
-    opener = useRef<HTMLElement | null>(null);
-  const loadState = () => {
+  const opener = useRef<HTMLElement | null>(null),
+    search = useRef<HTMLInputElement>(null);
+  const blocked = busy || !online;
+  const load = useCallback(async () => {
     setLoading(true);
-    fetch("/api/state")
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((d: AppState) => {
-        setState({
-          ...d,
-          evaluations: [...d.evaluations].sort(
-            (a, b) => +new Date(b.timestamp) - +new Date(a.timestamp),
-          ),
-        });
-        setPolicy(d.policy);
-        setOnline(true);
-      })
-      .catch(() => {
-        setOnline(false);
-        setToast(
-          "Local evaluation gateway is offline. No observations are shown.",
-        );
-      })
-      .finally(() => setLoading(false));
-  };
-  useEffect(loadState, []);
-  useEffect(() => {
-    if (toast) {
-      const x = setTimeout(() => setToast(""), 4500);
-      return () => clearTimeout(x);
-    }
-  }, [toast]);
-  useEffect(() => {
-    if (!modal && !selected) {
-      opener.current?.focus();
-      return;
-    }
-    const box = modal ? dialog.current : drawer.current;
-    box?.focus();
-    const h = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setModal(false);
-        setSelected(null);
-      }
-      if (e.key === "Tab" && box) {
-        const items = [
-          ...box.querySelectorAll<HTMLElement>(
-            'button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])',
-          ),
-        ].filter((x) => !x.hasAttribute("disabled"));
-        if (items.length) {
-          const first = items[0],
-            last = items[items.length - 1];
-          if (e.shiftKey && (document.activeElement === first || document.activeElement === box)) {
-            e.preventDefault();
-            last.focus();
-          } else if (!e.shiftKey && document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-          }
-        }
-      }
-    };
-    addEventListener("keydown", h);
-    return () => removeEventListener("keydown", h);
-  }, [modal, selected]);
-  const resolved = (e: Evaluation): Decision =>
-    e.review?.decision || e.decision;
-  const items = useMemo(
-    () =>
-      state.evaluations.filter(
-        (e) =>
-          (type === "all" || e.request.type === type) &&
-          (decision === "all" || resolved(e) === decision) &&
-          (active !== "Review queue" || resolved(e) === "review") &&
-          `${e.request.name} ${e.request.source ?? ''} ${e.request.sessionId}`
-            .toLowerCase()
-            .includes(query.toLowerCase()),
-      ),
-    [state, query, type, decision, active],
-  );
-  const reviews = state.evaluations.filter(
-      (e) => resolved(e) === "review",
-    ).length,
-    counts = (d: Decision) =>
-      state.evaluations.filter((e) => resolved(e) === d).length;
-  async function call(url: string, opts?: RequestInit) {
-    if (!online) {
-      setToast("The local evaluation gateway is offline.");
-      return null;
-    }
-    setBusy(true);
     try {
-      const r = await fetch(url, {
-        headers: { "Content-Type": "application/json" },
-        ...opts,
-      });
-      if (!r.ok) {
-        const detail = await r.json().catch(() => null);
-        setToast(detail?.error || `Request failed (${r.status}).`);
-        return null;
-      }
-      return r;
+      const response = await fetch("/api/state");
+      if (!response.ok) throw Error();
+      const data: AppState = await response.json();
+      setState({ ...data, evaluations: latest(data.evaluations) });
+      setOnline(true);
+      setSynced(new Date().toISOString());
     } catch {
       setOnline(false);
-      setToast("The local gateway did not accept that request.");
+      setNotice("Gateway unavailable. Start the local server, then refresh.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  useEffect(() => {
+    void load();
+  }, [load]);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(""), 5500);
+    return () => clearTimeout(timer);
+  }, [notice]);
+  useEffect(() => {
+    setPage(0);
+  }, [query, type, decision, view, sessionFilter]);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setScenarioMenu(false);
+        setMobile(false);
+      }
+      if (
+        selected ||
+        modal ||
+        /INPUT|TEXTAREA|SELECT/.test((event.target as HTMLElement).tagName) ||
+        event.metaKey ||
+        event.ctrlKey
+      )
+        return;
+      if (event.key === "/" && view !== "Policy") {
+        event.preventDefault();
+        search.current?.focus();
+      }
+      if (event.key === "n" && !blocked) {
+        opener.current = document.activeElement as HTMLElement;
+        setModal(true);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selected, modal, view, blocked]);
+  async function api<T>(url: string, options?: RequestInit): Promise<T | null> {
+    if (blocked) return null;
+    setBusy(true);
+    try {
+      const response = await fetch(url, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+      });
+      const body = await response.json();
+      if (!response.ok) {
+        setNotice(body.error || "The request could not be completed.");
+        return null;
+      }
+      setSynced(new Date().toISOString());
+      return body as T;
+    } catch {
+      setOnline(false);
+      setNotice("Connection lost. Your saved observations are still shown.");
       return null;
     } finally {
       setBusy(false);
     }
   }
-  async function review(decision: "allow" | "deny") {
-    if (!selected) return;
-    const note =
-      (
-        document.getElementById("review-note") as HTMLTextAreaElement
-      )?.value.trim() || "";
-    if (!note) {
-      setToast("A reviewer note is required.");
-      return;
+  function navigate(next: View) {
+    setView(next);
+    setQuery("");
+    setType("all");
+    setDecision("all");
+    setSessionFilter("");
+    setMobile(false);
+    setScenarioMenu(false);
+  }
+  function inspect(e: Evaluation) {
+    opener.current = document.activeElement as HTMLElement;
+    setSelected(e);
+  }
+  function closeDialog() {
+    setSelected(null);
+    setModal(false);
+    setTimeout(() => opener.current?.focus(), 0);
+  }
+  function addEvaluations(evaluations: Evaluation[]) {
+    setState((current) => ({
+      ...current,
+      evaluations: latest([...evaluations, ...current.evaluations]),
+    }));
+  }
+  async function run(scenario: Scenario) {
+    setScenarioMenu(false);
+    const results = await api<Evaluation[]>(
+      `/api/scenarios/${scenario.id}/run`,
+      { method: "POST" },
+    );
+    if (results) {
+      addEvaluations(results);
+      setSession(results[0].request.sessionId);
+      setView("Overview");
+      setNotice(
+        `Workflow replayed · ${results.length} evaluation${results.length === 1 ? "" : "s"} recorded.`,
+      );
     }
-    const r = await call(`/api/reviews/${selected.id}`, {
+  }
+  async function review(next: "allow" | "deny", note: string) {
+    if (!selected) return;
+    const updated = await api<Evaluation>(`/api/reviews/${selected.id}`, {
       method: "POST",
-      body: JSON.stringify({ decision, note }),
+      body: JSON.stringify({ decision: next, note }),
     });
-    if (r) {
-      const updated = await r.json();
-      setState((s) => ({
-        ...s,
-        evaluations: s.evaluations.map((e) =>
-          e.id === updated.id ? updated : e,
+    if (updated) {
+      setState((current) => ({
+        ...current,
+        evaluations: current.evaluations.map((item) =>
+          item.id === updated.id ? updated : item,
         ),
       }));
       setSelected(updated);
-      setToast("Review decision recorded.");
+      setNotice("Review saved to the audit trail.");
     }
   }
-  async function savePolicy() {
-    if (policy.reviewThreshold >= policy.denyThreshold) {
-      setToast("The review threshold must be lower than the deny threshold.");
-      return;
-    }
-    const r = await call("/api/policy", {
+  async function savePolicy(policy: Policy) {
+    const saved = await api<Policy>("/api/policy", {
       method: "PATCH",
       body: JSON.stringify(policy),
     });
-    if (r) {
-      setState((s) => ({ ...s, policy }));
-      setToast("Policy saved to local gateway.");
-    }
-  }
-  async function run(s: Scenario) {
-    setMenu(false);
-    const r = await call(`/api/scenarios/${s.id}/run`, { method: "POST" });
-    if (r) {
-      const d: Evaluation[] = await r.json();
-      setState((x) => ({
-        ...x,
-        evaluations: [...d, ...x.evaluations].sort(
-          (a, b) => +new Date(b.timestamp) - +new Date(a.timestamp),
-        ),
-      }));
-      setToast(`Scenario “${s.title}” evaluated.`);
-    }
-  }
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    const source = String(f.get("source") || "").trim();
-    const request = {
-      type: f.get("type"),
-      name: f.get("name"),
-      sessionId: f.get("session"),
-      content: f.get("content") || undefined,
-      metadata: {
-        exists:
-          f.get("exists") === "unknown"
-            ? undefined
-            : f.get("exists") === "true",
-        signed:
-          f.get("signed") === "unknown"
-            ? undefined
-            : f.get("signed") === "true",
-        ageDays: f.get("age") ? Number(f.get("age")) : undefined,
-        downloads: f.get("downloads") ? Number(f.get("downloads")) : undefined,
-      },
-      ...(source ? { source } : {}),
-    } as ArtifactRequest;
-    const r = await call("/api/evaluate", {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
-    if (r) {
-      const ev = await r.json();
-      setState((s) => ({
-        ...s,
-        evaluations: [ev, ...s.evaluations].sort(
-          (a, b) => +new Date(b.timestamp) - +new Date(a.timestamp),
-        ),
-      }));
-      setModal(false);
-      setSelected(ev);
-      setToast("Artifact evaluated locally.");
+    if (saved) {
+      setState((current) => ({ ...current, policy: saved }));
+      setNotice("Policy updated. New evaluations will use these thresholds.");
     }
   }
   async function exportAudit() {
-    const r = await call("/api/export");
-    if (r) {
-      const data = await r.text(),
-        a = document.createElement("a");
-      a.href = URL.createObjectURL(
-        new Blob([data], { type: "application/json" }),
+    const result = await api<unknown>("/api/export");
+    if (result) {
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(result, null, 2)], {
+          type: "application/json",
+        }),
       );
-      a.download = "mosaic-audit.json";
-      a.click();
-      URL.revokeObjectURL(a.href);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "mosaic-audit.json";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setNotice("Audit export prepared.");
     }
   }
+  async function submit(request: ArtifactRequest) {
+    const result = await api<Evaluation>("/api/evaluate", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+    if (result) {
+      addEvaluations([result]);
+      setModal(false);
+      setSelected(result);
+      setSession(result.request.sessionId);
+      setNotice("Evaluation recorded.");
+    }
+  }
+  const pending = state.evaluations.filter((e) => resolved(e) === "review");
+  const counts = {
+    allow: state.evaluations.filter((e) => resolved(e) === "allow").length,
+    review: pending.length,
+    deny: state.evaluations.filter((e) => resolved(e) === "deny").length,
+  };
+  const sessions = useMemo(() => {
+    const groups = new Map<string, Evaluation[]>();
+    for (const e of [...state.evaluations].reverse()) {
+      const id = e.request.sessionId;
+      groups.set(id, [...(groups.get(id) || []), e]);
+    }
+    return [...groups.entries()].sort((a, b) =>
+      b[1].at(-1)!.timestamp.localeCompare(a[1].at(-1)!.timestamp),
+    );
+  }, [state.evaluations]);
+  const activeSession =
+    sessions.find(([id]) => id === session) ??
+    sessions.find(([, list]) => list.length > 1) ??
+    sessions[0];
+  const filtered = state.evaluations.filter(
+    (e) =>
+      (type === "all" || e.request.type === type) &&
+      (decision === "all" || resolved(e) === decision) &&
+      (view !== "Review queue" || resolved(e) === "review") &&
+      (!sessionFilter || e.request.sessionId === sessionFilter) &&
+      `${e.request.name} ${e.request.source || ""} ${e.request.sessionId}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
+  const pageSize = view === "Overview" ? 6 : 10,
+    pageCount = Math.max(1, Math.ceil(filtered.length / pageSize)),
+    currentPage = Math.min(page, pageCount - 1),
+    visible = filtered.slice(
+      currentPage * pageSize,
+      (currentPage + 1) * pageSize,
+    );
+  const subtitle =
+    view === "Overview"
+      ? "Track artifact requests, inspect evidence, and resolve holds."
+      : view === "Requests"
+        ? "Every evaluated artifact, with the evidence behind its decision."
+        : view === "Review queue"
+          ? "Resolve held requests with a recorded human decision."
+          : "Set the boundaries for your next evaluation.";
   return (
-    <div className="app-shell">
-      <aside className={mobile ? "sidebar open" : "sidebar"}>
-        <div className="brand">
-          <i className="mark">
-            <b />
-            <b />
-            <b />
-            <b />
-          </i>
-          <span>MOSAIC</span>
-          <button
-            aria-label="Close navigation"
-            className="mobile-close"
-            onClick={() => setMobile(false)}
-          >
-            <X size={18} />
-          </button>
-        </div>
+    <div className="shell">
+      {mobile && (
+        <button
+          className="nav-scrim"
+          aria-label="Close navigation"
+          onClick={() => setMobile(false)}
+        />
+      )}
+      <aside
+        className={`sidebar ${mobile ? "is-open" : ""}`}
+        inert={!!selected || modal}
+      >
+        <a
+          className="brand"
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate("Overview");
+          }}
+        >
+          <span className="brand-mark">
+            {Array.from({ length: 9 }, (_, i) => (
+              <i key={i} />
+            ))}
+          </span>
+          <span>
+            MOSAIC<small>ARTIFACT CONTROL</small>
+          </span>
+        </a>
         <div className="workspace">
-          <span>WORKSPACE</span>
-          <strong>Local evaluation</strong>
-          <em className={online ? "gateway online" : "gateway"}>
-            <span />
-            {online ? "Gateway online" : "Gateway offline"}
-          </em>
+          <span className="workspace-symbol">
+            <Terminal size={16} />
+          </span>
+          <span>
+            Local workspace<small>Development environment</small>
+          </span>
+          <span className="workspace-dot" />
         </div>
+        <p className="nav-caption">WORKSPACE</p>
         <nav>
-          {nav.map((n) => (
+          {views.map((item) => (
             <button
-              key={n.label}
-              className={active === n.label ? "nav active" : "nav"}
-              onClick={() => {
-                setActive(n.label);
-                setQuery("");
-                setType("all");
-                setDecision("all");
-                setMobile(false);
-              }}
+              key={item.label}
+              className={view === item.label ? "nav-item active" : "nav-item"}
+              aria-current={view === item.label ? "page" : undefined}
+              onClick={() => navigate(item.label)}
             >
-              <n.icon size={18} />
-              {n.label}
-              {n.label === "Review queue" && reviews > 0 && (
-                <small>{reviews}</small>
+              <item.icon size={17} />
+              <span>{item.label}</span>
+              {item.label === "Review queue" && (
+                <small
+                  className={
+                    pending.length ? "nav-count attention" : "nav-count"
+                  }
+                >
+                  {pending.length}
+                </small>
               )}
             </button>
           ))}
         </nav>
-        <div className="sidebar-foot">
-          <div className="hash">
-            <ShieldCheck size={17} />
-            <span>
-              Hash-linked
-              <br />
-              <strong>local receipts</strong>
-            </span>
-          </div>
-          <button disabled={!online || busy} onClick={exportAudit}>
-            <ArrowDownToLine size={17} />
-            Export audit
+        <div className="sidebar-note">
+          <GitBranch size={22} />
+          <strong>Cross-artifact history</strong>
+          <p>Inspect related requests within a shared session.</p>
+          <button onClick={() => navigate("Overview")}>
+            Inspect a session
+            <ArrowUpRight size={14} />
           </button>
+        </div>
+        <div className="sidebar-bottom">
+          <button onClick={() => void exportAudit()} disabled={blocked}>
+            <ArrowDownToLine size={16} />
+            Export audit trail
+            <ArrowUpRight size={13} />
+          </button>
+          <div className="runtime">
+            <span className={online ? "status-dot" : "status-dot offline"} />
+            Local gateway<span>v0.1</span>
+          </div>
         </div>
       </aside>
-      {toast && (
-        <div className="toast" role="status">
-          <CircleAlert size={17} />
-          {toast}
-          {!online && <button onClick={loadState}>Retry</button>}
-          <button
-            aria-label="Dismiss notification"
-            onClick={() => setToast("")}
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-      <main>
-        <header>
-          <button
-            aria-label="Open navigation"
-            className="hamburger"
-            onClick={() => setMobile(true)}
-          >
-            <Menu />
-          </button>
-          <div className="crumb">
-            <span>WORKSPACE</span>
-            <ChevronRight size={14} />
-            <strong>LOCAL</strong>
+      <div className="main-shell" inert={!!selected || modal}>
+        <header className="topbar">
+          <div className="breadcrumbs">
+            <button
+              className="icon-button menu-button"
+              aria-label="Open navigation"
+              onClick={() => setMobile(!mobile)}
+            >
+              <Menu size={20} />
+            </button>
+            <span>Workspace</span>
+            <ChevronRight size={13} />
+            <strong>{view}</strong>
           </div>
-          <div className="header-right">
-            <span className={online ? "local-dot online" : "local-dot"}>
+          <div className="topbar-tools">
+            <span className="fixture-chip">
+              <span />
+              Synthetic fixtures
+            </span>
+            <span className={`connection ${online ? "" : "disconnected"}`}>
               <i />
-              {online ? "Gateway online" : "Gateway offline"}
+              {loading ? "Connecting" : online ? "API reachable" : "Offline"}
             </span>
             <button
-              className="refresh-btn"
+              className="icon-button"
+              title="Refresh observations"
               aria-label="Refresh gateway state"
-              title="Refresh observations and gateway status"
               disabled={loading || busy}
-              onClick={loadState}
+              onClick={() => void load()}
             >
-              <RefreshCw size={18} />
+              <RefreshCw size={15} className={loading ? "spin" : ""} />
             </button>
-            <button
-              className="icon-btn"
-              aria-label="Open policy settings"
-              onClick={() => setActive("Policy")}
-            >
-              <Settings2 size={19} />
-            </button>
-            <span className="avatar" aria-label="Local workspace">
-              AF
+            <span className="local-avatar" title="Local workspace">
+              L
             </span>
           </div>
         </header>
-        {active !== "Policy" && (
-          <>
-            <section className="hero">
-              <div>
-                <p className="eyebrow">
-                  {active.toUpperCase()} <span>·</span> SYNTHETIC DEMO DATA
-                </p>
-                <h1>
-                  {active === "Overview" ? (
-                    <>
-                      Every artifact.
-                      <br />
-                      One checkpoint.
-                    </>
-                  ) : active === "Requests" ? (
-                    "Artifact requests"
-                  ) : (
-                    "Human review queue"
-                  )}
-                </h1>
-                <p className="lede">
-                  Inspect packages, skills, MCP tools, and remote URLs before
-                  they enter an agent session.
-                </p>
+        <main>
+          <div className="page-heading">
+            <div>
+              <div className="overline">
+                <span className="orange-square" />
+                MOSAIC / CONTROL PLANE
               </div>
-              <div className="hero-actions">
-                <div className="scenario">
-                  <button
-                    disabled={!online || busy}
-                    onClick={() => setMenu(!menu)}
-                  >
-                    <Sparkles size={17} />
-                    Run scenario
-                    <ChevronRight size={15} />
-                  </button>
-                  {menu && (
+              <h1>{view === "Overview" ? "Artifact overview" : view}</h1>
+              <p>{subtitle}</p>
+            </div>
+            <div className="page-actions">
+              <div className="scenario-wrap">
+                <button
+                  className="button secondary"
+                  disabled={blocked}
+                  aria-expanded={scenarioMenu}
+                  onClick={() => setScenarioMenu(!scenarioMenu)}
+                >
+                  <Play size={14} />
+                  Replay workflow
+                  <ChevronDown size={13} />
+                </button>
+                {scenarioMenu && (
+                  <>
+                    <button
+                      className="menu-dismiss"
+                      aria-label="Close workflow menu"
+                      onClick={() => setScenarioMenu(false)}
+                    />
                     <div className="scenario-menu">
-                      {state.scenarios.map((s) => (
-                        <button
-                          disabled={busy}
-                          key={s.id}
-                          onClick={() => run(s)}
-                        >
-                          <strong>{s.title}</strong>
-                          <span>{s.description}</span>
+                      <div className="menu-label">
+                        SYNTHETIC WORKFLOWS<span>{state.scenarios.length}</span>
+                      </div>
+                      {state.scenarios.map((s, index) => (
+                        <button key={s.id} onClick={() => void run(s)}>
+                          <span className="scenario-index">0{index + 1}</span>
+                          <span>
+                            <strong>{s.title}</strong>
+                            <small>{s.description}</small>
+                          </span>
+                          <ArrowUpRight size={15} />
                         </button>
                       ))}
                     </div>
-                  )}
-                </div>
-                <button
-                  disabled={!online || busy}
-                  className="primary"
-                  onClick={(e) => {
-                    opener.current = e.currentTarget;
-                    setModal(true);
-                  }}
-                >
-                  <Plus size={18} />
-                  Evaluate artifact
-                </button>
-              </div>
-            </section>
-            <section className="metrics">
-              <Metric
-                n={state.evaluations.length}
-                label="Artifacts evaluated"
-              />
-              <Metric n={counts("allow")} label="Cleared" cls="good" />
-              <Metric n={reviews} label="Needs review" cls="warn" />
-              <Metric n={counts("deny")} label="Stopped" cls="bad" />
-            </section>
-            <section className="coverage">
-              <div>
-                <p className="eyebrow">COVERAGE</p>
-                <h2>Artifact types</h2>
-              </div>
-              <div className="coverage-bars">
-                {(["package", "skill", "mcp", "url"] as ArtifactType[]).map(
-                  (t) => {
-                    let v = state.evaluations.filter(
-                      (e) => e.request.type === t,
-                    ).length;
-                    let label = {
-                      package: "Packages",
-                      skill: "Skills",
-                      mcp: "MCP servers",
-                      url: "URLs",
-                    }[t];
-                    return (
-                      <div className="coverage-row" key={t}>
-                        <span className="typechip">{typeIcons[t]}</span>
-                        <b>{label}</b>
-                        <div>
-                          <i
-                            style={{
-                              width: `${state.evaluations.length ? Math.max(6, (v / state.evaluations.length) * 100) : 0}%`,
-                            }}
-                          />
-                        </div>
-                        <strong>{v}</strong>
-                      </div>
-                    );
-                  },
+                  </>
                 )}
               </div>
-            </section>
-            <section className="content-grid">
-              <div className="requests panel">
-                <div className="section-head">
-                  <div>
-                    <p className="eyebrow">OBSERVATIONS</p>
-                    <h2>
-                      {active === "Overview"
-                        ? "Recent requests"
-                        : active === "Requests"
-                          ? "All requests"
-                          : "Awaiting review"}
-                    </h2>
+              <button
+                className="button primary"
+                disabled={blocked}
+                onClick={(e) => {
+                  opener.current = e.currentTarget;
+                  setModal(true);
+                }}
+              >
+                <Plus size={16} />
+                New evaluation<kbd>N</kbd>
+              </button>
+            </div>
+          </div>
+          {!online && !loading && (
+            <div className="offline-banner">
+              <CircleAlert size={17} />
+              <span>
+                Gateway offline. Showing the last loaded observations.
+              </span>
+              <button onClick={() => void load()}>
+                Reconnect
+                <RefreshCw size={14} />
+              </button>
+            </div>
+          )}
+          {view !== "Policy" && (
+            <>
+              <section className="metric-band" aria-label="Evaluation totals">
+                <button
+                  onClick={() => {
+                    setDecision("all");
+                    setSessionFilter("");
+                  }}
+                  className="metric total"
+                >
+                  <span className="metric-label">
+                    Evaluated artifacts
+                    <Layers3 size={15} />
+                  </span>
+                  <strong>
+                    {loading ? "—" : state.evaluations.length}
+                    <small>across {sessions.length} sessions</small>
+                  </strong>
+                  <div className="microbars" aria-hidden="true">
+                    {state.evaluations
+                      .slice(0, 24)
+                      .reverse()
+                      .map((e) => (
+                        <i
+                          key={e.id}
+                          className={resolved(e)}
+                          style={{ height: `${Math.max(15, e.score)}%` }}
+                        />
+                      ))}
                   </div>
-                  {active === "Overview" && (
+                </button>
+                {(["allow", "review", "deny"] as Decision[]).map((d) => {
+                  const Icon = decisionIcon[d];
+                  return (
                     <button
-                      className="text-btn"
-                      onClick={() => setActive("Requests")}
+                      key={d}
+                      className={`metric ${d} ${decision === d ? "metric-selected" : ""}`}
+                      onClick={() => {
+                        setDecision(decision === d ? "all" : d);
+                        if (view === "Review queue" && d !== "review")
+                          setView("Requests");
+                      }}
                     >
-                      View all <ChevronRight size={15} />
+                      <span className="metric-label">
+                        {d === "review" ? "Awaiting review" : decisionLabel[d]}
+                        <Icon size={15} />
+                      </span>
+                      <strong>
+                        {loading ? "—" : counts[d]}
+                        <small>
+                          {d === "allow"
+                            ? "cleared by policy or review"
+                            : d === "review"
+                              ? "waiting for your decision"
+                              : "denied by policy or review"}
+                        </small>
+                      </strong>
+                      <span className="metric-link">
+                        {d === "review" && counts[d]
+                          ? "Open requests"
+                          : "View observations"}
+                        <ArrowUpRight size={13} />
+                      </span>
                     </button>
-                  )}
-                </div>
-                <div className="filters">
-                  <label>
-                    <Search size={16} />
-                    <input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Search artifacts"
-                    />
-                  </label>
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    aria-label="Filter by type"
-                  >
-                    <option value="all">All types</option>
-                    {(["package", "skill", "mcp", "url"] as ArtifactType[]).map(
-                      (x) => (
-                        <option key={x}>{x}</option>
-                      ),
-                    )}
-                  </select>
-                  <select
-                    value={decision}
-                    onChange={(e) => setDecision(e.target.value)}
-                    aria-label="Filter by decision"
-                  >
-                    <option value="all">All decisions</option>
-                    <option value="allow">Allowed</option>
-                    <option value="review">Review</option>
-                    <option value="deny">Denied</option>
-                  </select>
-                </div>
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Artifact</th>
-                        <th>Session</th>
-                        <th>Score</th>
-                        <th>Decision</th>
-                        <th>Observed</th>
-                        <th />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {loading ? (
-                        <tr>
-                          <td colSpan={6} className="empty">
-                            Loading local state…
-                          </td>
-                        </tr>
-                      ) : items.length ? (
-                        items.map((e) => (
-                          <tr
-                            key={e.id}
-                            onClick={(x) => {
-                              opener.current = x.currentTarget;
-                              setSelected(e);
-                            }}
-                            tabIndex={0}
-                            onKeyDown={(x) =>
-                              x.key === "Enter" && setSelected(e)
-                            }
-                          >
-                            <td>
-                              <span className="typechip">
-                                {typeIcons[e.request.type]}
-                              </span>
-                              <div>
+                  );
+                })}
+              </section>
+              {view === "Overview" && (
+                <div className="overview-top">
+                  <section className="panel session-panel">
+                    <div className="panel-heading">
+                      <div>
+                        <span className="section-kicker">
+                          CROSS-ARTIFACT CONTEXT
+                        </span>
+                        <h2>
+                          Session trace
+                          <span className="label-tag">
+                            {activeSession?.[1].length ?? 0} events
+                          </span>
+                        </h2>
+                      </div>
+                      <label className="session-picker">
+                        <GitBranch size={14} />
+                        <select
+                          aria-label="Choose session"
+                          value={activeSession?.[0] ?? ""}
+                          onChange={(e) => setSession(e.target.value)}
+                        >
+                          {sessions.map(([id]) => (
+                            <option key={id} value={id}>
+                              {shortSession(id)}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown size={12} />
+                      </label>
+                    </div>
+                    <div className="session-canvas">
+                      {activeSession ? (
+                        <>
+                          <div className="session-start">
+                            <span>
+                              <Terminal size={16} />
+                            </span>
+                            <small>
+                              {activeSession[1].length > 5 ? "LATEST" : "SESSION"}
+                              <br />
+                              {activeSession[1].length > 5 ? "EVENTS" : "START"}
+                            </small>
+                          </div>
+                          {activeSession[1].slice(-5).map((e, index) => (
+                            <div className="trace-step" key={e.id}>
+                              <div className="trace-connector">
+                                <span />
+                                <ChevronRight size={14} />
+                              </div>
+                              <button
+                                className={`trace-node ${resolved(e)}`}
+                                onClick={() => inspect(e)}
+                              >
+                                <div className="trace-top">
+                                  <ArtifactIcon type={e.request.type} />
+                                  <span className="trace-number">
+                                    0
+                                    {Math.max(0, activeSession[1].length - 5) +
+                                      index +
+                                      1}
+                                  </span>
+                                </div>
                                 <strong>{e.request.name}</strong>
-                                <small>{e.request.source || "no source"}</small>
-                              </div>
-                            </td>
-                            <td>
-                              <code>{e.request.sessionId}</code>
-                            </td>
-                            <td>
-                              <div className="score">
-                                <i style={{ width: `${e.score}%` }} />
-                                <b>{e.score}</b>
-                              </div>
-                            </td>
-                            <td>
-                              <span className={tone(resolved(e))}>
-                                {resolved(e)}
-                              </span>
-                            </td>
-                            <td>
-                              <small>{date(e.timestamp)}</small>
-                            </td>
-                            <td>
-                              <MoreHorizontal size={18} />
+                                <small>{typeLabel[e.request.type]}</small>
+                                <div className="trace-bottom">
+                                  <span className="trace-score">
+                                    {e.score}
+                                    <small>/100</small>
+                                  </span>
+                                  <Badge decision={resolved(e)} />
+                                </div>
+                              </button>
+                            </div>
+                          ))}
+                        </>
+                      ) : (
+                        <div className="empty">
+                          Run a workflow to inspect its session history.
+                        </div>
+                      )}
+                    </div>
+                    <div className="session-caption">
+                      <GitBranch size={14} />
+                      <span>
+                        {activeSession?.[1].some((e) => correlation(e) > 0) ? (
+                          <>
+                            Related earlier requests added{" "}
+                            <strong>
+                              +{Math.max(...activeSession[1].map(correlation))}{" "}
+                              risk points
+                            </strong>{" "}
+                            to a later evaluation.
+                          </>
+                        ) : (
+                          "Shared session history brings related artifact requests into view."
+                        )}
+                      </span>
+                      {activeSession && (
+                        <button
+                          onClick={() => {
+                            navigate("Requests");
+                            setSessionFilter(activeSession[0]);
+                          }}
+                        >
+                          View session
+                          <ArrowRight size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </section>
+                  <section className="panel policy-summary">
+                    <div className="panel-heading">
+                      <div>
+                        <span className="section-kicker">
+                          DECISION BOUNDARIES
+                        </span>
+                        <h2>Active policy</h2>
+                      </div>
+                      <Settings2 size={16} />
+                    </div>
+                    <div className="policy-name">
+                      <span className="policy-symbol">
+                        <ShieldCheck size={22} />
+                      </span>
+                      <div>
+                        <strong>Local standard</strong>
+                        <small>Applied before the caller proceeds</small>
+                      </div>
+                    </div>
+                    <Boundary policy={state.policy} />
+                    <div className="policy-legend">
+                      <span>
+                        <i className="allow" />
+                        Allow
+                      </span>
+                      <span>
+                        <i className="review" />
+                        Review
+                      </span>
+                      <span>
+                        <i className="deny" />
+                        Deny
+                      </span>
+                    </div>
+                    <div className="policy-bottom">
+                      <span>
+                        <GitBranch size={13} />
+                        Correlation{" "}
+                        {state.policy.correlationEnabled ? "on" : "off"}
+                      </span>
+                      <button onClick={() => navigate("Policy")}>
+                        Edit policy
+                        <ArrowUpRight size={13} />
+                      </button>
+                    </div>
+                  </section>
+                </div>
+              )}
+              <div
+                className={
+                  view === "Overview" ? "stream-layout" : "stream-layout full"
+                }
+              >
+                <section className="panel stream-panel">
+                  <div className="panel-heading">
+                    <div>
+                      <span className="section-kicker">
+                        {view === "Review queue"
+                          ? "HUMAN CHECKPOINT"
+                          : "OBSERVATIONS"}
+                      </span>
+                      <h2>
+                        {view === "Overview"
+                          ? "Decision stream"
+                          : view === "Review queue"
+                            ? "Pending decisions"
+                            : "All requests"}
+                        <span className="label-tag">{filtered.length}</span>
+                      </h2>
+                    </div>
+                    <span className="table-hint">
+                      <Circle size={7} fill="currentColor" />
+                      Stored locally
+                    </span>
+                  </div>
+                  <div
+                    className="type-tabs"
+                    role="group"
+                    aria-label="Artifact type filter"
+                  >
+                    <button
+                      className={type === "all" ? "active" : ""}
+                      onClick={() => setType("all")}
+                    >
+                      All artifacts<span>{state.evaluations.length}</span>
+                    </button>
+                    {TYPES.map((t) => {
+                      const Icon = typeIcon[t];
+                      return (
+                        <button
+                          key={t}
+                          className={type === t ? "active" : ""}
+                          onClick={() => setType(t)}
+                        >
+                          <Icon size={14} />
+                          {t === "mcp"
+                            ? "MCP"
+                            : t === "url"
+                              ? "URLs"
+                              : `${typeLabel[t]}s`}
+                          <span>
+                            {
+                              state.evaluations.filter(
+                                (e) => e.request.type === t,
+                              ).length
+                            }
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="filter-row">
+                    <label className="search-field">
+                      <Search size={15} />
+                      <input
+                        ref={search}
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Find an artifact or session…"
+                        aria-label="Search requests"
+                      />
+                      <kbd>/</kbd>
+                    </label>
+                    <select
+                      className="decision-select"
+                      aria-label="Filter by decision"
+                      value={decision}
+                      onChange={(e) => setDecision(e.target.value)}
+                    >
+                      <option value="all">All decisions</option>
+                      <option value="allow">Allowed</option>
+                      <option value="review">Needs review</option>
+                      <option value="deny">Denied</option>
+                    </select>
+                    {(query ||
+                      type !== "all" ||
+                      decision !== "all" ||
+                      sessionFilter) && (
+                      <button
+                        className="clear-filter"
+                        aria-label="Clear all filters"
+                        onClick={() => {
+                          setQuery("");
+                          setType("all");
+                          setDecision("all");
+                          setSessionFilter("");
+                        }}
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  {sessionFilter && (
+                    <div className="session-filter">
+                      <GitBranch size={12} />
+                      {shortSession(sessionFilter)}
+                      <button
+                        aria-label="Remove session filter"
+                        onClick={() => setSessionFilter("")}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
+                  <div className="table-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Artifact / source</th>
+                          <th>Risk score</th>
+                          <th>Decision</th>
+                          <th>Evaluated</th>
+                          <th>
+                            <span className="sr-only">Inspect</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loading && !state.evaluations.length ? (
+                          <tr>
+                            <td colSpan={5} className="empty">
+                              Loading observations…
                             </td>
                           </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={6} className="empty">
-                            No matching observations.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <aside className="right-rail">
-                <div className="panel activity">
-                  <div className="section-head">
+                        ) : visible.length ? (
+                          visible.map((e) => (
+                            <tr key={e.id}>
+                              <td>
+                                <button
+                                  className="artifact-cell"
+                                  onClick={() => inspect(e)}
+                                >
+                                  <ArtifactIcon type={e.request.type} />
+                                  <span>
+                                    <strong>{e.request.name}</strong>
+                                    <small>
+                                      {e.request.source ||
+                                        shortSession(e.request.sessionId)}
+                                    </small>
+                                  </span>
+                                </button>
+                              </td>
+                              <td>
+                                <div className={`risk-cell ${e.decision}`}>
+                                  <span>
+                                    {String(e.score).padStart(2, "0")}
+                                  </span>
+                                  <div>
+                                    <i style={{ width: `${e.score}%` }} />
+                                  </div>
+                                  {correlation(e) > 0 && (
+                                    <GitBranch
+                                      size={12}
+                                      aria-label="Includes session correlation"
+                                    />
+                                  )}
+                                </div>
+                              </td>
+                              <td>
+                                <Badge decision={resolved(e)} />
+                                {e.review && (
+                                  <span
+                                    className="review-indicator"
+                                    title="Human review recorded"
+                                  >
+                                    <CheckCheck size={12} />
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                <time
+                                  dateTime={e.timestamp}
+                                  title={new Date(e.timestamp).toLocaleString()}
+                                >
+                                  {time(e.timestamp)}
+                                </time>
+                              </td>
+                              <td>
+                                <button
+                                  className="row-open"
+                                  aria-label={`Inspect ${e.request.name}`}
+                                  onClick={() => inspect(e)}
+                                >
+                                  <ArrowUpRight size={15} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5}>
+                              <div className="empty-state">
+                                <Search size={24} />
+                                <strong>
+                                  {view === "Review queue" &&
+                                  !query &&
+                                  type === "all" &&
+                                  decision === "all"
+                                    ? "You’re all caught up."
+                                    : "No matching requests"}
+                                </strong>
+                                <span>
+                                  {view === "Review queue"
+                                    ? "Held requests appear here for a human decision."
+                                    : "Try another filter, or evaluate a new artifact."}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="table-footer">
+                    <span>
+                      {filtered.length
+                        ? `${currentPage * pageSize + 1}–${Math.min((currentPage + 1) * pageSize, filtered.length)} of ${filtered.length} observations`
+                        : "0 observations"}
+                    </span>
                     <div>
-                      <p className="eyebrow">SESSION</p>
-                      <h2>Activity</h2>
+                      <button
+                        aria-label="Previous page"
+                        disabled={currentPage === 0}
+                        onClick={() => setPage(currentPage - 1)}
+                      >
+                        <ChevronLeft size={15} />
+                      </button>
+                      <span>
+                        {currentPage + 1} / {pageCount}
+                      </span>
+                      <button
+                        aria-label="Next page"
+                        disabled={currentPage + 1 >= pageCount}
+                        onClick={() => setPage(currentPage + 1)}
+                      >
+                        <ChevronRight size={15} />
+                      </button>
                     </div>
-                    <span className="live">LOCAL</span>
                   </div>
-                  <div className="activity-list">
-                    {state.evaluations.slice(0, 4).map((e) => (
-                      <div key={e.id}>
-                        <span
-                          className={tone(e.review?.decision || e.decision)}
-                        >
-                          {e.review?.decision || e.decision}
-                        </span>
-                        <p>
-                          <strong>{e.request.name}</strong>
-                          <small>
-                            {date(e.timestamp)} · {e.durationMs}ms
-                          </small>
-                        </p>
+                </section>
+                {view === "Overview" && (
+                  <aside className="inbox">
+                    <section className="panel review-panel">
+                      <div className="panel-heading">
+                        <div>
+                          <span className="section-kicker">
+                            YOUR CHECKPOINT
+                          </span>
+                          <h2>Review inbox</h2>
+                        </div>
+                        <span className="inbox-count">{pending.length}</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="panel policy-card">
-                  <div className="policy-icon">
-                    <SlidersHorizontal size={18} />
-                  </div>
-                  <p className="eyebrow">ACTIVE POLICY</p>
-                  <h2>Local standard</h2>
-                  <p>
-                    Review at <b>{state.policy.reviewThreshold}</b> · stop at{" "}
-                    <b>{state.policy.denyThreshold}</b>
-                  </p>
-                  <button
-                    className="text-btn"
-                    onClick={() => setActive("Policy")}
-                  >
-                    Edit policy <ChevronRight size={15} />
-                  </button>
-                </div>
-              </aside>
-            </section>
-          </>
-        )}
-        {active === "Policy" && (
-          <section className="policy-editor panel">
-            <div>
-              <p className="eyebrow">POLICY</p>
-              <h2>Decision thresholds</h2>
-              <p>
-                Scores run from 0 to 100. Changes apply to the local gateway.
-              </p>
-            </div>
-            <div className="policy-controls">
-              <label>
-                Review threshold <output>{policy.reviewThreshold}</output>
-                <input
-                  type="range"
-                  min="1"
-                  max="99"
-                  value={policy.reviewThreshold}
-                  onChange={(e) =>
-                    setPolicy({ ...policy, reviewThreshold: +e.target.value })
-                  }
-                />
-              </label>
-              <label>
-                Deny threshold <output>{policy.denyThreshold}</output>
-                <input
-                  type="range"
-                  min="1"
-                  max="100"
-                  value={policy.denyThreshold}
-                  onChange={(e) =>
-                    setPolicy({ ...policy, denyThreshold: +e.target.value })
-                  }
-                />
-              </label>
-              <label className="switch">
-                Cross-request correlation{" "}
-                <input
-                  type="checkbox"
-                  checked={policy.correlationEnabled}
-                  onChange={(e) =>
-                    setPolicy({
-                      ...policy,
-                      correlationEnabled: e.target.checked,
-                    })
-                  }
-                />
-                <i />
-              </label>
-              <button className="primary" disabled={!online || busy || policy.reviewThreshold >= policy.denyThreshold} onClick={savePolicy}>
-                Save policy
-              </button>
-            </div>
-          </section>
-        )}
-      </main>
-      {selected && (
-        <div
-          className="overlay"
-          role="presentation"
-          onMouseDown={() => setSelected(null)}
-        >
-          <aside
-            className="drawer"
-            ref={drawer}
-            tabIndex={-1}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Evaluation details"
-            onMouseDown={(e) => e.stopPropagation()}
+                      {pending.length ? (
+                        <>
+                          <p className="panel-description">
+                            These requests are waiting on a human decision.
+                          </p>
+                          <div className="review-list">
+                            {pending.slice(0, 3).map((e) => (
+                              <button key={e.id} onClick={() => inspect(e)}>
+                                <span className="review-card-top">
+                                  <ArtifactIcon type={e.request.type} />
+                                  <span>
+                                    {e.score}
+                                    <small>/100</small>
+                                  </span>
+                                </span>
+                                <strong>{e.request.name}</strong>
+                                <p>
+                                  {[...e.signals].sort(
+                                    (a, b) => b.score - a.score,
+                                  )[0]?.label ?? "Policy threshold reached"}
+                                </p>
+                                <span className="review-card-action">
+                                  Inspect & decide
+                                  <ArrowRight size={14} />
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            className="panel-bottom-link"
+                            onClick={() => navigate("Review queue")}
+                          >
+                            Open review queue
+                            <ArrowUpRight size={14} />
+                          </button>
+                        </>
+                      ) : (
+                        <div className="inbox-empty">
+                          <CheckCheck size={30} />
+                          <strong>No decisions waiting.</strong>
+                          <p>New held requests will appear here.</p>
+                        </div>
+                      )}
+                    </section>
+                    <div className="audit-note">
+                      <Fingerprint size={20} />
+                      <div>
+                        <strong>Exportable audit history</strong>
+                        <p>
+                          Hash-linked evaluations, stored locally and ready to
+                          export.
+                        </p>
+                        <button
+                          onClick={() => void exportAudit()}
+                          disabled={blocked}
+                        >
+                          Download audit
+                          <ArrowDownToLine size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  </aside>
+                )}
+              </div>
+            </>
+          )}
+          {view === "Policy" && (
+            <PolicyEditor
+              saved={state.policy}
+              blocked={blocked}
+              onSave={savePolicy}
+            />
+          )}
+          <footer className="workspace-footer">
+            <span>
+              <Terminal size={12} />
+              LOCAL EVALUATION GATEWAY
+            </span>
+            <span>
+              {synced ? `Last synced ${time(synced)}` : "Waiting for gateway"}
+              <i />
+              MVP · v0.1
+            </span>
+          </footer>
+        </main>
+      </div>
+      {notice && (
+        <div className="notification" role="status">
+          <CircleAlert size={16} />
+          <span>{notice}</span>
+          <button
+            aria-label="Dismiss notification"
+            onClick={() => setNotice("")}
           >
-            <button
-              aria-label="Close evaluation details"
-              className="drawer-close"
-              onClick={() => setSelected(null)}
-            >
-              <X />
-            </button>
-            <p className="eyebrow">EVALUATION · {selected.id}</p>
-            <h2>{selected.request.name}</h2>
-            <div className="drawer-meta">
-              <span className="typechip">
-                {typeIcons[selected.request.type]}
-              </span>
-              <span>{selected.request.type}</span>
-              <code>{selected.request.sessionId}</code>
-            </div>
-            <div className="decision-banner">
-              <span className={tone(resolved(selected))}>
-                {resolved(selected)}
-              </span>
-              <b>
-                Risk score <strong>{selected.score}</strong>/100
-              </b>
-            </div>
-            <h3>Signal breakdown</h3>
-            {selected.signals.length ? (
-              selected.signals.map((s) => (
-                <div className="signal" key={s.id}>
-                  <div>
-                    <span>{s.label}</span>
-                    <b>{s.score} points</b>
-                  </div>
-                  <div className="signal-bar">
-                    <i style={{ width: `${s.score}%` }} />
-                  </div>
-                  <small>{s.reason}</small>
-                </div>
-              ))
-            ) : (
-              <p className="empty-signals">
-                No configured indicators were returned for this evaluation.
-              </p>
-            )}
-            <div className="receipt">
-              <KeyRound size={16} />
-              <div>
-                <small>Hash-linked local receipt</small>
-                <code>
-                  {selected.receipt.hash} ← {selected.receipt.previousHash}
-                </code>
-              </div>
-            </div>
-            {selected.decision === "review" && !selected.review && (
-              <div className="review-box">
-                <label>
-                  Reviewer note
-                  <textarea
-                    required
-                    id="review-note"
-                    placeholder="Reason for this decision"
-                  />
-                </label>
-                <div>
-                  <button
-                    disabled={busy || !online}
-                    onClick={() => review("deny")}
-                    className="deny-btn"
-                  >
-                    Deny
-                  </button>
-                  <button
-                    disabled={busy || !online}
-                    onClick={() => review("allow")}
-                    className="primary"
-                  >
-                    <Check size={16} />
-                    Allow
-                  </button>
-                </div>
-              </div>
-            )}
-            {selected.review && (
-              <p className="reviewed">
-                <Check size={16} />
-                Reviewed as {selected.review.decision}
-                {selected.review.note && `: ${selected.review.note}`}
-              </p>
-            )}
-          </aside>
+            <X size={14} />
+          </button>
         </div>
       )}
-      {modal && (
-        <div className="overlay" onMouseDown={() => setModal(false)}>
-          <div
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="eval-title"
-            ref={dialog}
-            tabIndex={-1}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <button
-              aria-label="Close evaluation form"
-              className="drawer-close"
-              onClick={() => setModal(false)}
-            >
-              <X />
-            </button>
-            <p className="eyebrow">LOCAL GATEWAY</p>
-            <h2 id="eval-title">Evaluate an artifact</h2>
-            <p>
-              Submit an artifact to the local evaluation gateway. This is a
-              synthetic demo workspace.
-            </p>
-            <form onSubmit={submit}>
-              <label>
-                Artifact type
-                <select name="type" defaultValue="package">
-                  <option value="package">Package</option>
-                  <option value="skill">Skill</option>
-                  <option value="mcp">MCP tool</option>
-                  <option value="url">Remote URL</option>
-                </select>
-              </label>
-              <label>
-                Artifact name
-                <input
-                  required
-                  name="name"
-                  placeholder="example-package@1.0.0"
-                  autoFocus
-                />
-              </label>
-              <div className="form-row">
-                <label>
-                  Session ID
-                  <input required name="session" defaultValue="local-manual" />
-                </label>
-                <label>
-                  Source
-                  <input name="source" placeholder="registry or URL" />
-                </label>
-              </div>
-              <div className="form-row">
-                <label>
-                  Artifact exists
-                  <select name="exists" defaultValue="unknown">
-                    <option value="unknown">Unknown</option>
-                    <option value="true">Reported present</option>
-                    <option value="false">Not found</option>
-                  </select>
-                </label>
-                <label>
-                  Signature state
-                  <select name="signed" defaultValue="unknown">
-                    <option value="unknown">Unknown</option>
-                    <option value="true">Reported signed</option>
-                    <option value="false">Reported unsigned</option>
-                  </select>
-                </label>
-              </div>
-              <div className="form-row">
-                <label>
-                  Age in days
-                  <input
-                    min="0"
-                    name="age"
-                    type="number"
-                    placeholder="Optional"
-                  />
-                </label>
-                <label>
-                  Downloads
-                  <input
-                    min="0"
-                    name="downloads"
-                    type="number"
-                    placeholder="Optional"
-                  />
-                </label>
-              </div>
-              <label>
-                Content or metadata{" "}
-                <textarea
-                  name="content"
-                  placeholder="Optional contextual details for this evaluation"
-                />
-              </label>
-              <button
-                className="primary"
-                type="submit"
-                disabled={!online || busy}
-              >
-                <ShieldCheck size={17} />
-                Evaluate locally
-              </button>
-            </form>
-          </div>
-        </div>
+      {(selected || modal) && (
+        <EvaluationDialog
+          selected={selected}
+          blocked={blocked}
+          busy={busy}
+          onClose={closeDialog}
+          onReview={review}
+          onSubmit={submit}
+        />
       )}
-    </div>
-  );
-}
-function Metric({
-  n,
-  label,
-  cls = "",
-}: {
-  n: number;
-  label: string;
-  cls?: string;
-}) {
-  return (
-    <div className={`metric ${cls}`}>
-      <strong>{n}</strong>
-      <span>{label}</span>
     </div>
   );
 }
