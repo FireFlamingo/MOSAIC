@@ -31,6 +31,9 @@ interface Props {
   selected: Evaluation | null;
   blocked: boolean;
   busy: boolean;
+  online: boolean;
+  reconnecting: boolean;
+  onReconnect: () => Promise<void>;
   onClose: () => void;
   onReview: (decision: "allow" | "deny", note: string) => Promise<void>;
   onSubmit: (request: ArtifactRequest) => Promise<void>;
@@ -39,6 +42,9 @@ export function EvaluationDialog({
   selected,
   blocked,
   busy,
+  online,
+  reconnecting,
+  onReconnect,
   onClose,
   onReview,
   onSubmit,
@@ -117,6 +123,7 @@ export function EvaluationDialog({
         aria-modal="true"
         aria-label={selected ? "Evaluation details" : "New evaluation"}
       >
+        {!online && <div className="dialog-offline" role="alert">Connection lost. Your draft is still here. <button className="button secondary" disabled={reconnecting} onClick={() => void onReconnect()}>{reconnecting ? "Reconnecting…" : "Reconnect"}</button></div>}
         <button
           className="dialog-close icon-button"
           disabled={busy}

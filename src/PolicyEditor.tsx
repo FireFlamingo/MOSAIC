@@ -11,10 +11,26 @@ export function PolicyEditor({
   blocked: boolean;
   onSave: (policy: Policy) => Promise<void>;
 }) {
-  const [policy, setPolicy] = useState(saved),
-    [previewScore, setPreviewScore] = useState(50);
-  useEffect(() => setPolicy(saved), [saved]);
-  const dirty = JSON.stringify(policy) !== JSON.stringify(saved);
+  const [review, setReview] = useState(String(saved.reviewThreshold));
+  const [deny, setDeny] = useState(String(saved.denyThreshold));
+  const [correlationEnabled, setCorrelation] = useState(saved.correlationEnabled);
+  const [previewScore, setPreviewScore] = useState(50);
+  function discard() {
+    setReview(String(saved.reviewThreshold));
+    setDeny(String(saved.denyThreshold));
+    setCorrelation(saved.correlationEnabled);
+  }
+  useEffect(() => {
+    setReview(String(saved.reviewThreshold));
+    setDeny(String(saved.denyThreshold));
+    setCorrelation(saved.correlationEnabled);
+  }, [saved.reviewThreshold, saved.denyThreshold, saved.correlationEnabled]);
+  const valid = review.trim() !== "" && deny.trim() !== "" &&
+    Number.isInteger(Number(review)) && Number.isInteger(Number(deny)) &&
+    Number(review) >= 0 && Number(deny) <= 100 && Number(review) < Number(deny);
+  const draft = { reviewThreshold: Number(review), denyThreshold: Number(deny), correlationEnabled };
+  const policy = valid ? draft : saved;
+  const dirty = review !== String(saved.reviewThreshold) || deny !== String(saved.denyThreshold) || correlationEnabled !== saved.correlationEnabled;
   const verdict: Decision =
     previewScore >= policy.denyThreshold
       ? "deny"
@@ -23,7 +39,10 @@ export function PolicyEditor({
         : "allow";
   return (
     <div className="policy-layout">
-      <section className="panel policy-editor">
+      <form className="panel policy-editor" noValidate onSubmit={(event) => {
+        event.preventDefault();
+        if (valid && dirty && !blocked) void onSave(draft);
+      }}>
         <div className="panel-heading">
           <div>
             <span className="section-kicker">THRESHOLD POLICY</span>
@@ -46,27 +65,21 @@ export function PolicyEditor({
           <input
             id="review-threshold"
             type="number"
-            min={1}
-            max={policy.denyThreshold - 1}
-            value={policy.reviewThreshold}
-            onChange={(e) =>
-              setPolicy((p) => ({
-                ...p,
-                reviewThreshold: Math.min(
-                  p.denyThreshold - 1,
-                  Math.max(1, +e.target.value),
-                ),
-              }))
-            }
+            min={0}
+            max={99}
+            value={review}
+            aria-invalid={!valid}
+            aria-describedby={!valid ? "threshold-error" : undefined}
+            onChange={(e) => setReview(e.target.value)}
           />
           <input
             aria-label="Review threshold slider"
             type="range"
-            min={1}
+            min={0}
             max={policy.denyThreshold - 1}
             value={policy.reviewThreshold}
             onChange={(e) =>
-              setPolicy({ ...policy, reviewThreshold: +e.target.value })
+              setReview(e.target.value)
             }
           />
         </div>
@@ -78,18 +91,12 @@ export function PolicyEditor({
           <input
             id="deny-threshold"
             type="number"
-            min={policy.reviewThreshold + 1}
+            min={1}
             max={100}
-            value={policy.denyThreshold}
-            onChange={(e) =>
-              setPolicy((p) => ({
-                ...p,
-                denyThreshold: Math.max(
-                  p.reviewThreshold + 1,
-                  Math.min(100, +e.target.value),
-                ),
-              }))
-            }
+            value={deny}
+            aria-invalid={!valid}
+            aria-describedby={!valid ? "threshold-error" : undefined}
+            onChange={(e) => setDeny(e.target.value)}
           />
           <input
             aria-label="Deny threshold slider"
@@ -98,10 +105,11 @@ export function PolicyEditor({
             max={100}
             value={policy.denyThreshold}
             onChange={(e) =>
-              setPolicy({ ...policy, denyThreshold: +e.target.value })
+              setDeny(e.target.value)
             }
           />
         </div>
+        {!valid && <p id="threshold-error" role="alert" className="policy-error">Enter whole numbers from 0 to 100. Review must be lower than deny. The preview uses the saved policy until these values are valid.</p>}
         <div className="correlation-control">
           <div>
             <GitBranch size={20} />
@@ -112,15 +120,11 @@ export function PolicyEditor({
           </div>
           <button
             role="switch"
+            type="button"
             aria-label="Cross-artifact correlation"
-            aria-checked={policy.correlationEnabled}
-            className={`toggle ${policy.correlationEnabled ? "on" : ""}`}
-            onClick={() =>
-              setPolicy({
-                ...policy,
-                correlationEnabled: !policy.correlationEnabled,
-              })
-            }
+            aria-checked={correlationEnabled}
+            className={`toggle ${correlationEnabled ? "on" : ""}`}
+            onClick={() => setCorrelation(!correlationEnabled)}
           >
             <i />
           </button>
@@ -128,21 +132,22 @@ export function PolicyEditor({
         <div className="policy-actions">
           <button
             className="button secondary"
-            disabled={!dirty || blocked}
-            onClick={() => setPolicy(saved)}
+            type="button"
+            disabled={!dirty}
+            onClick={discard}
           >
             Discard changes
           </button>
           <button
             className="button primary"
-            disabled={blocked || !dirty}
-            onClick={() => void onSave(policy)}
+            disabled={blocked || !dirty || !valid}
+            type="submit"
           >
             <Check size={15} />
             Save policy
           </button>
         </div>
-      </section>
+      </form>
       <div>
         <section className="panel policy-preview">
           <span className="section-kicker">TRY A SCORE</span>

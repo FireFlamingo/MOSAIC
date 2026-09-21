@@ -20,6 +20,8 @@ npm start
 
 Open http://127.0.0.1:4318. Run `npm run check` for automated tests and the production build.
 
+Run `npm run test:browser` for the Playwright browser regression suite. It starts isolated local servers and temporary stores, leaving your `data/` untouched. Windows uses installed Microsoft Edge; other platforms use Chromium (`npx playwright install chromium` first). The suite covers forms, native selects, workflow menus, filtering, reviews, policy edits, audit downloads, reconnection, keyboard focus, and mobile navigation. Failed runs save screenshots and traces; open the report with `npx playwright show-report`.
+
 ## MVP scope
 
 - Submit and inspect all four artifact types.

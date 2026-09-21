@@ -50,8 +50,11 @@ function browserWriteGuard(req: Request, res: Response, next: () => void) {
   if (!origin) return next(); // permits local CLI use
   try {
     const url = new URL(origin);
-    const allowedHost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
-    if (allowedHost && (url.port === '4317' || url.port === '4318')) return next();
+    const target = new URL(`http://${req.get('host')}`);
+    const loopback = (hostname: string) => hostname === 'localhost' || hostname === '127.0.0.1';
+    const sameOrigin = url.origin === target.origin;
+    const viteProxy = url.port === '4317' && target.port === '4318';
+    if (url.protocol === 'http:' && loopback(url.hostname) && loopback(target.hostname) && (sameOrigin || viteProxy)) return next();
   } catch { /* reject malformed origins */ }
   return res.status(403).json({ error: 'Cross-site writes are blocked' });
 }

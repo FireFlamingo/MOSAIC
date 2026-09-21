@@ -1664,7 +1664,7 @@ td time {
   gap: 10px;
   align-items: center;
   max-width: calc(100vw - 45px);
-  animation: rise-in 0.18s ease;
+  animation: toast-in 0.18s ease;
 }
 .notification > svg {
   color: #c5c5c5;
@@ -3075,6 +3075,10 @@ td time {
   background: #111111;
   border-right-color: #242424;
 }
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
 .session-panel {
   background: #191919;
   border-color: #323232;
@@ -3109,3 +3113,6 @@ td time {
     scroll-behavior: auto !important;
   }
 }
+.policy-error { color: var(--amber, #f1b85a); font-size: 12px; line-height: 1.6; margin: 16px 0; }
+.dialog-offline { padding: 16px; margin: 24px 0 16px; border: 1px solid #685333; border-radius: 8px; color: #f1b85a; font-size: 13px; line-height: 1.6; }
+.dialog-offline button { margin-top: 8px; }

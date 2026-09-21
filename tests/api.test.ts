@@ -25,6 +25,15 @@ test('rejects malformed artifact input', async () => withServer(async (base) => 
   assert.equal(response.status, 400);
 }));
 
+test('accepts same-origin browser writes on custom local ports', async () => withServer(async (base) => {
+  const send = (origin: string) => fetch(`${base}/api/evaluate`, {
+    method: 'POST', headers: { 'content-type': 'application/json', origin }, body: JSON.stringify(artifact),
+  });
+  assert.equal((await send(base)).status, 201);
+  assert.equal((await send('http://127.0.0.1:1')).status, 403);
+  assert.equal((await send(base.replace('http:', 'https:'))).status, 403);
+}));
+
 test('persists evaluation and records immutable review audit event', async () => withServer(async (base) => {
   const created = await fetch(`${base}/api/evaluate`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(artifact) });
   assert.equal(created.status, 201);

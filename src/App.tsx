@@ -82,26 +82,45 @@ export default function App() {
     [mobile, setMobile] = useState(false);
   const opener = useRef<HTMLElement | null>(null),
     search = useRef<HTMLInputElement>(null);
-  const blocked = busy || !online;
+  const sessionChooser = useRef<HTMLSelectElement>(null);
+  const replayTrigger = useRef<HTMLButtonElement>(null);
+  const replayMenu = useRef<HTMLDivElement>(null);
+  const pendingRequest = useRef(false);
+  const loadingRequest = useRef(false);
+  const [sessionFocus, setSessionFocus] = useState(0);
+  const blocked = busy || loading || !online;
   const load = useCallback(async () => {
+    if (pendingRequest.current || loadingRequest.current) return;
+    loadingRequest.current = true;
     setLoading(true);
     try {
-      const response = await fetch("/api/state");
+      const response = await fetch("/api/state", { signal: AbortSignal.timeout(10000) });
       if (!response.ok) throw Error();
       const data: AppState = await response.json();
       setState({ ...data, evaluations: latest(data.evaluations) });
+      setSelected((current) => current ? data.evaluations.find((e) => e.id === current.id) ?? null : null);
       setOnline(true);
       setSynced(new Date().toISOString());
     } catch {
       setOnline(false);
       setNotice("Gateway unavailable. Start the local server, then refresh.");
     } finally {
+      loadingRequest.current = false;
       setLoading(false);
     }
   }, []);
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(() => {
+    if (sessionFocus && view === "Overview") {
+      sessionChooser.current?.focus();
+      sessionChooser.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [sessionFocus, view]);
+  useEffect(() => {
+    if (scenarioMenu) replayMenu.current?.querySelector("button")?.focus();
+  }, [scenarioMenu]);
   useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => setNotice(""), 5500);
@@ -113,6 +132,7 @@ export default function App() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (scenarioMenu) replayTrigger.current?.focus();
         setScenarioMenu(false);
         setMobile(false);
       }
@@ -135,13 +155,15 @@ export default function App() {
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [selected, modal, view, blocked]);
+  }, [selected, modal, view, blocked, scenarioMenu]);
   async function api<T>(url: string, options?: RequestInit): Promise<T | null> {
-    if (blocked) return null;
+    if (blocked || pendingRequest.current || loadingRequest.current) return null;
+    pendingRequest.current = true;
     setBusy(true);
     try {
       const response = await fetch(url, {
         headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(10000),
         ...options,
       });
       const body = await response.json();
@@ -156,6 +178,7 @@ export default function App() {
       setNotice("Connection lost. Your saved observations are still shown.");
       return null;
     } finally {
+      pendingRequest.current = false;
       setBusy(false);
     }
   }
@@ -192,7 +215,7 @@ export default function App() {
     if (results) {
       addEvaluations(results);
       setSession(results[0].request.sessionId);
-      setView("Overview");
+      navigate("Overview");
       setNotice(
         `Workflow replayed · ${results.length} evaluation${results.length === 1 ? "" : "s"} recorded.`,
       );
@@ -365,7 +388,7 @@ export default function App() {
           <GitBranch size={22} />
           <strong>Cross-artifact history</strong>
           <p>Inspect related requests within a shared session.</p>
-          <button onClick={() => navigate("Overview")}>
+          <button onClick={() => { navigate("Overview"); setSessionFocus((n) => n + 1); }}>
             Inspect a session
             <ArrowUpRight size={14} />
           </button>
@@ -435,6 +458,8 @@ export default function App() {
                   className="button secondary"
                   disabled={blocked}
                   aria-expanded={scenarioMenu}
+                  aria-controls="workflow-menu"
+                  ref={replayTrigger}
                   onClick={() => setScenarioMenu(!scenarioMenu)}
                 >
                   <Play size={14} />
@@ -448,7 +473,15 @@ export default function App() {
                       aria-label="Close workflow menu"
                       onClick={() => setScenarioMenu(false)}
                     />
-                    <div className="scenario-menu">
+                    <div className="scenario-menu" id="workflow-menu" ref={replayMenu}
+                      onKeyDown={(event) => {
+                        if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+                        event.preventDefault();
+                        const buttons = [...event.currentTarget.querySelectorAll("button")];
+                        const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+                        const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : (index + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) % buttons.length;
+                        buttons[next]?.focus();
+                      }}>
                       <div className="menu-label">
                         SYNTHETIC WORKFLOWS<span>{state.scenarios.length}</span>
                       </div>
@@ -495,10 +528,7 @@ export default function App() {
             <>
               <section className="metric-band" aria-label="Evaluation totals">
                 <button
-                  onClick={() => {
-                    setDecision("all");
-                    setSessionFilter("");
-                  }}
+                  onClick={() => navigate("Requests")}
                   className="metric total"
                 >
                   <span className="metric-label">
@@ -529,9 +559,8 @@ export default function App() {
                       key={d}
                       className={`metric ${d} ${decision === d ? "metric-selected" : ""}`}
                       onClick={() => {
-                        setDecision(decision === d ? "all" : d);
-                        if (view === "Review queue" && d !== "review")
-                          setView("Requests");
+                        navigate("Requests");
+                        setDecision(d);
                       }}
                     >
                       <span className="metric-label">
@@ -577,6 +606,7 @@ export default function App() {
                         <GitBranch size={14} />
                         <select
                           aria-label="Choose session"
+                          ref={sessionChooser}
                           value={activeSession?.[0] ?? ""}
                           onChange={(e) => setSession(e.target.value)}
                         >
@@ -796,7 +826,10 @@ export default function App() {
                       className="decision-select"
                       aria-label="Filter by decision"
                       value={decision}
-                      onChange={(e) => setDecision(e.target.value)}
+                      onChange={(e) => {
+                        setDecision(e.target.value);
+                        if (view === "Review queue" && e.target.value !== "review" && e.target.value !== "all") setView("Requests");
+                      }}
                     >
                       <option value="all">All decisions</option>
                       <option value="allow">Allowed</option>
@@ -1084,6 +1117,9 @@ export default function App() {
           selected={selected}
           blocked={blocked}
           busy={busy}
+          online={online}
+          reconnecting={loading}
+          onReconnect={load}
           onClose={closeDialog}
           onReview={review}
           onSubmit={submit}
