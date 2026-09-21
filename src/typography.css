@@ -1,0 +1,69 @@
+/* A quiet reading face for controls; a more distinctive face for hierarchy. */
+body {
+  font-optical-sizing: auto;
+}
+
+h1,
+h2,
+h3,
+.brand {
+  font-family: var(--font-heading);
+}
+
+.page-heading h1 {
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.panel-heading h2,
+.policy-preview h2,
+.evaluation-modal h2,
+.inspector-heading h2 {
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+h3 {
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.brand {
+  font-weight: 750;
+  letter-spacing: 0.035em;
+}
+
+.metric > strong,
+.preview-number {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+}
+
+.metric > strong small {
+  letter-spacing: normal;
+}
+
+.nav-item,
+.button,
+.type-tabs button,
+.artifact-cell strong {
+  font-weight: 500;
+}
+
+.section-kicker,
+.nav-caption,
+.overline,
+.evidence-heading > span,
+th {
+  font-family: var(--font-body);
+  font-weight: 550;
+}
+
+.page-heading p,
+.modal-description,
+.panel-description {
+  line-height: 1.65;
+}

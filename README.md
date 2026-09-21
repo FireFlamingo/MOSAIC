@@ -36,6 +36,10 @@ The console includes an interactive session trace, review inbox, searchable pagi
 
 The [MVP capabilities and roadmap PDF](output/pdf/MOSAIC-MVP-Guide.pdf) explains the working features, scoring example, demonstration steps, current limitations and planned final-project additions. Rebuild it with `python scripts/build_mvp_guide.py` after installing `reportlab`.
 
+For presenting, use the [black-and-white presentation guide](output/pdf/MOSAIC-Presentation-Guide.pdf). It covers setup, a suggested live demonstration, the full feature checklist, and a field-by-field new-evaluation example with its expected result. Its editable source is [docs/PRESENTATION.md](docs/PRESENTATION.md); rebuild with `python scripts/build_presentation_guide.py` and `reportlab` installed.
+
+The interface uses locally bundled [Manrope](https://fontsource.org/fonts/manrope) headings and [Public Sans](https://fontsource.org/fonts/public-sans) text. It makes no Google Fonts requests. Font licenses are included in `public/fonts/` and copied into the production build.
+
 The initial observations and scenarios are **synthetic demonstrations**, not traffic from connected agents or a validated research benchmark. They run locally and never execute submitted artifacts.
 
 ## Evaluate from an agent integration
