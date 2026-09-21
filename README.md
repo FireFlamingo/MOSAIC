@@ -34,6 +34,8 @@ Run `npm run test:browser` for the Playwright browser regression suite. It start
 
 The console includes an interactive session trace, review inbox, searchable paginated request stream, evidence inspector, and a threshold preview. See [the demonstration guide](docs/DEMO.md) for a short walkthrough.
 
+The [MVP capabilities and roadmap PDF](output/pdf/MOSAIC-MVP-Guide.pdf) explains the working features, scoring example, demonstration steps, current limitations and planned final-project additions. Rebuild it with `python scripts/build_mvp_guide.py` after installing `reportlab`.
+
 The initial observations and scenarios are **synthetic demonstrations**, not traffic from connected agents or a validated research benchmark. They run locally and never execute submitted artifacts.
 
 ## Evaluate from an agent integration
