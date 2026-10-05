@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, CircleAlert, GitBranch } from "lucide-react";
 import type { Decision, Policy } from "../shared/types";
 import { Badge, Boundary } from "./ui";
+import { RECOMMENDED_POLICY } from "../shared/scoring";
 export function PolicyEditor({
   saved,
   blocked,
@@ -56,6 +57,7 @@ export function PolicyEditor({
           Requests receive a score from 0 to 100. These boundaries decide which
           requests proceed, pause, or stop.
         </p>
+        <p className="scoring-policy-note">Recommended: review at {RECOMMENDED_POLICY.reviewThreshold} (one medium concern), deny at {RECOMMENDED_POLICY.denyThreshold} (one high concern). These are policy boundaries, awaiting benchmark calibration.</p>
         <Boundary policy={policy} />
         <div className="threshold-field">
           <label htmlFor="review-threshold">

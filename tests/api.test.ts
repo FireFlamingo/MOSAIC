@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { createApp } from '../server/index.js';
 import { evaluateRisk } from '../server/engine.js';
 import type { ArtifactRequest } from '../shared/types.js';
+import { verifyEvaluations } from '../scripts/verify-audit.js';
 
 async function withServer(fn: (base: string) => Promise<void>) {
   const directory = await mkdtemp(join(tmpdir(), 'mosaic-api-'));
@@ -18,7 +19,7 @@ async function withServer(fn: (base: string) => Promise<void>) {
   try { await fn(base); } finally { await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())); await rm(directory, { recursive: true, force: true }); }
 }
 
-const artifact: ArtifactRequest = { type: 'package', name: 'test-kit', sessionId: 'session-one', metadata: { exists: true, ageDays: 2, downloads: 12, signed: false, permissions: ['network:egress', 'secrets:read'] } };
+const artifact: ArtifactRequest = { type: 'package', name: 'test-kit', sessionId: 'session-one', metadata: { exists: true, ageDays: 2, downloads: 12, signed: true, permissions: ['network:egress', 'secrets:read'] } };
 
 test('rejects malformed artifact input', async () => withServer(async (base) => {
   const response = await fetch(`${base}/api/evaluate`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...artifact, type: 'binary' }) });
@@ -110,3 +111,27 @@ test('runs scenarios in isolated sessions with live review and correlation signa
   assert.ok(first[1].signals.some((signal) => signal.id === 'session-correlation'));
   assert.ok(first[1].signals.some((signal) => signal.id === 'name-correlation'));
 }));
+
+test('upgrades legacy factory policy once while preserving original evaluations and custom policy', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'mosaic-upgrade-'));
+  try {
+    const first = await createApp({ dataDir: directory, seed: false });
+    const old = await first.store.append({ request: artifact, score: 48, decision: 'review', signals: [], durationMs: 1 });
+    const legacy = first.store.exportAudit();
+    delete legacy.scoringVersion;
+    legacy.policy = { reviewThreshold: 35, denyThreshold: 70, correlationEnabled: false };
+    await writeFile(join(directory, 'state.json'), JSON.stringify(legacy));
+    const migrated = await createApp({ dataDir: directory, seed: false });
+    assert.deepEqual(migrated.store.get(old.id), old);
+    assert.equal(verifyEvaluations(migrated.store.appState().evaluations).valid, true);
+    assert.deepEqual(migrated.store.policy(), { reviewThreshold: 50, denyThreshold: 75, correlationEnabled: false });
+    const reopened = await createApp({ dataDir: directory, seed: false });
+    assert.equal(reopened.store.exportAudit().audit.filter((event) => event.type === 'scoring-model').length, 1);
+    const custom = reopened.store.exportAudit();
+    delete custom.scoringVersion;
+    custom.policy = { reviewThreshold: 20, denyThreshold: 60, correlationEnabled: true };
+    await writeFile(join(directory, 'state.json'), JSON.stringify(custom));
+    const retained = await createApp({ dataDir: directory, seed: false });
+    assert.deepEqual(retained.store.policy(), custom.policy);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});

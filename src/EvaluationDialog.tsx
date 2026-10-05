@@ -16,6 +16,7 @@ import type {
   ArtifactType,
   Evaluation,
 } from "../shared/types";
+import { EVIDENCE_GROUPS, SCORING_SOURCES, SCORING_VERSION } from "../shared/scoring";
 import {
   ArtifactIcon,
   Badge,
@@ -154,6 +155,20 @@ export function EvaluationDialog({
               </div>
               <Badge decision={resolved(selected)} />
             </div>
+            <div className="scoring-explanation">
+              {selected.scoringVersion === SCORING_VERSION ? (
+                <>
+                  <strong>Literature-based severity scale · v2</strong>
+                  <p>Low 25 · Medium 50 · High 75 · Critical 100. Only the strongest signal in each evidence group adds points; the total is capped at 100. Age and downloads are context only.</p>
+                  <p>Weights follow <a href={SCORING_SOURCES.weights.url} target="_blank" rel="noreferrer">Zahan et al., IEEE Security &amp; Privacy (2023)</a>. Signal classifications and grouping are MOSAIC adaptations, awaiting benchmark calibration.</p>
+                </>
+              ) : (
+                <>
+                  <strong>Earlier scoring model · v1</strong>
+                  <p>This saved result uses the original heuristic weights. Submit a new evaluation to use the revised model.</p>
+                </>
+              )}
+            </div>
             <div className="inspector-section">
               <div className="subheading">
                 <h3>What informed this decision</h3>
@@ -161,7 +176,7 @@ export function EvaluationDialog({
               </div>
               {selected.signals.length ? (
                 [...selected.signals]
-                  .sort((a, b) => b.score - a.score)
+                  .sort((a, b) => b.score * b.weight - a.score * a.weight)
                   .map((s) => (
                     <div
                       className={`signal ${s.id.includes("correlation") ? "correlated" : ""}`}
@@ -179,6 +194,16 @@ export function EvaluationDialog({
                         <strong>+{s.score * s.weight}</strong>
                       </div>
                       <p>{s.reason}</p>
+                      {s.group && s.severity && (
+                        <small className="signal-method">{s.severity} · {EVIDENCE_GROUPS[s.group]} · {s.weight === 0 ? `${s.score} base points, already covered` : `${s.score} points included`}</small>
+                      )}
+                      {s.sources?.length ? (
+                        <details className="signal-sources">
+                          <summary>Research &amp; rationale</summary>
+                          <p>These sources support the risk concern; MOSAIC assigns its severity using the shared rubric.</p>
+                          {s.sources.map((source) => <a key={source} href={SCORING_SOURCES[source].url} target="_blank" rel="noreferrer">{SCORING_SOURCES[source].title}</a>)}
+                        </details>
+                      ) : null}
                       <div className="signal-track">
                         <i style={{ width: `${s.score * s.weight}%` }} />
                       </div>
@@ -203,6 +228,9 @@ export function EvaluationDialog({
                 <dd>{selected.request.source || "Not supplied"}</dd>
                 <dt>Scoring time</dt>
                 <dd>{selected.durationMs} ms</dd>
+                <dt>Scoring model</dt>
+                <dd>{selected.scoringVersion ?? "heuristic-v1"}</dd>
+                {selected.policySnapshot && <><dt>Policy at evaluation</dt><dd>Review {selected.policySnapshot.reviewThreshold} · Deny {selected.policySnapshot.denyThreshold}</dd></>}
                 <dt>Original decision</dt>
                 <dd>{decisionLabel[selected.decision]}</dd>
               </dl>

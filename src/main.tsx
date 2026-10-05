@@ -5,6 +5,7 @@ import "@fontsource-variable/manrope";
 import "@fontsource-variable/public-sans";
 import "./styles.css";
 import "./typography.css";
+import "./scoring.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

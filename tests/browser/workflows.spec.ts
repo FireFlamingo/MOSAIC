@@ -29,7 +29,8 @@ for (const [label, type] of [['Package', 'package'], ['Skill', 'skill'], ['MCP s
     const evaluation: Evaluation = await result.json();
     expect(evaluation.request.type).toBe(type);
     expect(evaluation.request.metadata).toMatchObject({ exists: true, signed: false, ageDays: 100, downloads: 1000, permissions: ['read:workspace'] });
-    expect(evaluation.score).toBe(10);
+    expect(evaluation.score).toBe(25);
+    expect(evaluation.scoringVersion).toBe('severity-v2');
     await expect(page.getByRole('dialog', { name: 'Evaluation details' })).toBeVisible();
     await expect(dialog).toContainText(evaluation.receipt.hash);
     await dialog.getByText('Supplied metadata & content', { exact: true }).click();
@@ -62,6 +63,53 @@ for (const decision of ['allow', 'deny'] as const) {
   });
 }
 
+test('presentation example shows 50 points, grouped supporting evidence and the IEEE reference', async ({ page }, testInfo) => {
+  await page.getByRole('button', { name: /New evaluation/ }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: 'MCP server', exact: true }).click();
+  await dialog.getByRole('textbox', { name: 'Artifact name', exact: true }).fill('presentation-notes');
+  await dialog.getByRole('textbox', { name: 'Session ID' }).fill('presentation-review-01');
+  await dialog.getByRole('textbox', { name: 'Source', exact: true }).fill('https://example.invalid/tools');
+  await dialog.getByRole('combobox', { name: 'Signature', exact: true }).selectOption('false');
+  await dialog.getByRole('spinbutton', { name: 'Age in days' }).fill('6');
+  await dialog.getByRole('spinbutton', { name: 'Downloads' }).fill('18');
+  await dialog.getByText('Content & permissions', { exact: true }).click();
+  await dialog.getByRole('textbox', { name: 'Static content' }).fill('Summarise the selected project notes.');
+  await dialog.getByRole('checkbox', { name: 'network:egress', exact: true }).check();
+  const response = page.waitForResponse((r) => r.url().endsWith('/api/evaluate') && r.request().method() === 'POST');
+  await dialog.getByRole('button', { name: 'Evaluate request' }).click();
+  const result: Evaluation = await (await response).json();
+  expect([result.score, result.decision, result.scoringVersion]).toEqual([50, 'review', 'severity-v2']);
+  await expect(dialog).toContainText('Age and downloads are context only');
+  await expect(dialog).toContainText('25 base points, already covered');
+  await expect(dialog.getByRole('link', { name: /Zahan et al., IEEE/ })).toHaveAttribute('href', 'https://arxiv.org/html/2208.03412v3#S2');
+  await dialog.getByText('Research & rationale', { exact: true }).first().click();
+  await expect(dialog.locator('.signal-sources').first()).toContainText('sources support the risk concern');
+  await page.screenshot({ path: testInfo.outputPath('scoring-desktop.png'), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('scoring-mobile.png'), fullPage: true });
+});
+
+test('correlation moves the linked skill from 25/allow to 75/deny with exact published-scale arithmetic', async ({ page }) => {
+  const replay = async () => {
+    await page.getByRole('button', { name: 'Replay workflow', exact: true }).click();
+    const response = page.waitForResponse((r) => r.url().endsWith('/api/scenarios/correlated-chain/run'));
+    await page.getByRole('button', { name: /Linked trust signals/ }).click();
+    return await (await response).json() as Evaluation[];
+  };
+  const linked = await replay();
+  expect(linked.map((e) => [e.score, e.decision])).toEqual([[100, 'deny'], [75, 'deny']]);
+  await page.getByRole('button', { name: 'Policy', exact: true }).click();
+  await page.getByRole('switch').click();
+  await page.getByRole('button', { name: 'Save policy' }).click();
+  await expect(page.getByRole('status')).toContainText('Policy updated');
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  const isolated = await replay();
+  expect(isolated[1].score).toBe(25);
+  expect(isolated[1].decision).toBe('allow');
+});
+
 test('policy validates edits, saves with Enter, previews, discards, and persists', async ({ page }) => {
   await page.getByRole('button', { name: 'Policy', exact: true }).click();
   const review = page.getByRole('spinbutton', { name: /Hold for review/ });
@@ -70,7 +118,7 @@ test('policy validates edits, saves with Enter, previews, discards, and persists
   await expect(page.getByRole('alert')).toContainText('Review must be lower');
   await expect(page.getByRole('button', { name: 'Save policy' })).toBeDisabled();
   await page.getByRole('button', { name: 'Discard changes' }).click();
-  await expect(review).toHaveValue('35');
+  await expect(review).toHaveValue('50');
   await review.fill('0');
   await deny.fill('80');
   await page.getByRole('switch').click();

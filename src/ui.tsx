@@ -13,6 +13,7 @@ import type {
   Evaluation,
   Policy,
 } from "../shared/types";
+import { RECOMMENDED_POLICY } from "../shared/scoring";
 export const TYPES: ArtifactType[] = ["package", "skill", "mcp", "url"];
 export const typeLabel = {
   package: "Package",
@@ -32,11 +33,7 @@ export const decisionLabel = {
   deny: "Denied",
 };
 export const decisionIcon = { allow: Check, review: Pause, deny: X };
-export const INITIAL_POLICY: Policy = {
-  reviewThreshold: 35,
-  denyThreshold: 70,
-  correlationEnabled: true,
-};
+export const INITIAL_POLICY: Policy = { ...RECOMMENDED_POLICY };
 export const resolved = (e: Evaluation) => e.review?.decision ?? e.decision;
 export const latest = (list: Evaluation[]) =>
   [...list].sort((a, b) => b.timestamp.localeCompare(a.timestamp));

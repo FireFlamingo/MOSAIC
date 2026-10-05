@@ -42,6 +42,12 @@ The interface uses locally bundled [Manrope](https://fontsource.org/fonts/manrop
 
 The initial observations and scenarios are **synthetic demonstrations**, not traffic from connected agents or a validated research benchmark. They run locally and never execute submitted artifacts.
 
+Scoring v2 uses the severity weights reported by Zahan et al. in **IEEE Security & Privacy (2023)**, scaled from 2.5/5/7.5/10 to 25/50/75/100. Signal classifications and strongest-per-group aggregation are MOSAIC adaptations; default review/deny boundaries are 50/75. Age and downloads carry no fixed penalty. This is a literature-based rubric, not a calibrated attack probability. See [the complete rules and paper references](docs/SCORING.md) and [the plain scoring defence PDF](output/pdf/MOSAIC-Scoring-Rationale.pdf).
+
+New records include the model version and policy used. Older records retain original scores and receipts. On upgrade, only former factory thresholds 35/70 move to 50/75; custom settings remain. Replay scenarios after upgrading to demonstrate the current method.
+
+The scoring PDF's editable source is `docs/SCORING-RATIONALE.md`; rebuild it with `python scripts/build_presentation_guide.py --scoring` and `reportlab` installed. All three guides are plain black-and-white text, with clickable research links.
+
 ## Evaluate from an agent integration
 
 ```sh

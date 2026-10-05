@@ -24,7 +24,7 @@ npm start
 ```
 
 4. Keep that terminal open. Open http://127.0.0.1:4318/ in your browser. Wait for "API reachable" in the header.
-5. Open Policy. Set Hold for review to 35, Deny the request to 70, and Cross-artifact correlation to on. Click Save policy if you changed anything. These are the defaults used in this guide.
+5. Open Policy. Set Hold for review to 50, Deny the request to 75, and Cross-artifact correlation to on. Click Save policy if you changed anything. These are the severity-v2 defaults used here. Existing saved evaluations retain earlier scores; submit or replay fresh requests.
 6. Return to Overview. Rehearse once before presenting. Old observations remain saved; you do not need to clear them. Each replay creates a new session.
 
 ### On presentation day
@@ -41,15 +41,15 @@ For development only, npm run dev serves the interface on port 4317 and the API 
 
 **2. Show a straightforward Allow (30 seconds).** Click Replay workflow, then Known publisher install. The new package scores 0 and is Allowed with the default policy. Explain: "No configured risk indicators matched the supplied evidence. This does not independently certify the package as safe."
 
-**3. Demonstrate session correlation (about 2 minutes).** Replay Linked trust signals. The Session trace shows a URL followed by a skill. The URL scores 100 and is Denied. The skill scores 43 and Needs review. Click the skill node and show What informed this decision. Its own metadata contributes 25; prior session activity adds 6 and the reused name adds 12.
+**3. Demonstrate session correlation (about 2 minutes).** Replay Linked trust signals. The URL scores 100 and is Denied. The skill scores 75 and is Denied: unsigned provenance contributes 25; the linked name contributes 50. Generic history is shown with zero extra points because the stronger name signal already covers that group. Open Research & rationale to show a cited paper.
 
 **4. Show filtering and navigation (30 seconds).** Close the details. Use the session dropdown to choose a session. Click View session to see only that session's requests. In Requests, try the artifact-type buttons, decision dropdown and search box. Clear filters before moving on.
 
-**5. Create an evaluation live (about 2 minutes).** Click New evaluation and enter the example on page 3. Submit it, show the 41-point breakdown, expand Supplied metadata & content, and point out the session, original decision and hash-linked receipt.
+**5. Create an evaluation live (about 2 minutes).** Click New evaluation and enter the example on page 3. Submit it, show the 50-point breakdown, expand Supplied metadata & content, and point out the session, scoring version, policy used and hash-linked receipt.
 
-**6. Resolve a review (about 1 minute).** In the resulting details, enter this Reviewer note: "Presentation example: reviewed the supplied metadata." Click Allow request. Show the recorded human review. Close the details and open Review queue: the resolved request is no longer pending. Its original score remains 41. A fresh replay of Young integration needs review provides another held request if you want to demonstrate Deny request instead.
+**6. Resolve a review (about 1 minute).** Enter Reviewer note: "Presentation example: reviewed the supplied metadata." Click Allow request. Show the recorded review. In Review queue, the resolved request is no longer pending. Its original score remains 50. Replay Young integration needs review for another held request to demonstrate Deny request.
 
-**7. Demonstrate policy (about 1 minute).** Open Policy and move the Decision preview slider. Scores 0-34 are allowed, 35-69 need review, and 70-100 are denied under the defaults. The preview creates no records. Turn correlation off and save; replay Linked trust signals again. Its skill now scores 25 and is Allowed. Restore correlation to on afterwards. Existing evaluations do not change.
+**7. Demonstrate policy (about 1 minute).** In Policy, move the Decision preview slider: 0-49 Allow, 50-74 Needs review, 75-100 Deny. Turn correlation off and save; replay Linked trust signals. Its skill now scores 25 and is Allowed. Restore correlation afterwards. Previewing creates no records and existing evaluations do not change.
 
 **8. Finish with the audit trail (30 seconds).** Click Export audit trail, or Download audit on Overview. Show the downloaded mosaic-audit.json file. Explain that records persist across restarts and that original evaluation receipts can be checked offline.
 
@@ -59,7 +59,7 @@ For development only, npm run dev serves the interface on port 4317 and the API 
 
 # 3. How to create a new evaluation
 
-Use review 35, deny 70 and correlation on. Choose a fresh session ID, such as presentation-review-01, to keep unrelated earlier activity out of this example. Use -02, -03 and so on for later rehearsals.
+Use review 50, deny 75 and correlation on. Choose a fresh session ID, such as presentation-review-01. Use -02, -03 and so on for later rehearsals.
 
 ### Enter this complete example
 
@@ -77,7 +77,7 @@ Use review 35, deny 70 and correlation on. Choose a fresh session ID, such as pr
 
 ### What you should see
 
-**Expected result: 41/100, Needs review.** The points are: existence unverified 8; unsigned artifact 10; very new artifact 8; low observed adoption 7; elevated network permission 8. Total: 8 + 10 + 8 + 7 + 8 = 41. This assumes the default policy and no earlier activity in that session.
+**Expected result: 50/100, Needs review.** Identity & provenance contributes max(existence unknown 25, reported unsigned 25) = 25. Network capability contributes 25. Total: 25 + 25 = 50. Unsigned is retained as supporting evidence with zero extra points. Age 6 and downloads 18 are context only. This assumes default policy and no earlier session activity.
 
 The details show each reason and its points, request context, the original decision, supplied metadata/content and the receipt hash. Enter a Reviewer note, then choose Allow request or Deny request. Without a non-empty note, the review buttons stay disabled.
 
@@ -93,7 +93,7 @@ Existence and signature values are reports supplied by you, not independently ve
 
 **Four artifact types.** Package assesses a software library request. Skill assesses agent instructions or rules. MCP server assesses a proposed external tool server. Remote URL assesses a proposed URL. All use one request format and the same scoring/review workflow.
 
-**Risk scoring and explanations.** The deterministic engine totals signal points, caps the score at 100, and applies policy thresholds. Rules cover reported existence, package-name similarity, age, adoption, signature status, elevated permissions, static content patterns, URL properties and session history.
+**Risk scoring and explanations.** Severity weights follow Zahan et al., IEEE Security & Privacy (2023). Take the strongest signal in each of five evidence groups, sum those points, and cap at 100. Rules cover identity/provenance, capabilities, static content, URL/transport and session context. Age and downloads add no points. Classifications and grouping are MOSAIC adaptations.
 
 **Overview and totals.** See total, allowed, pending-review and denied counts. Click a total to open the corresponding request list. Overview includes the active policy summary, session trace, decision stream and review inbox.
 
@@ -101,13 +101,13 @@ Existence and signature values are reports supplied by you, not independently ve
 
 **Search and filters.** Requests supports artifact-type buttons, a decision dropdown, search by artifact name/source/session, a session filter, clear filters and pagination. Search is case-insensitive. N opens an evaluation, / focuses search, and Escape closes dialogs.
 
-**Evidence inspector.** Open an artifact name, its inspect arrow, a trace node or a review card. See the score, verdict, signal breakdown, timestamp, source, session, scoring time, original decision, submitted evidence and SHA-256 receipt hash.
+**Evidence inspector.** Open an artifact name, inspect arrow, trace node or review card. See score, verdict, included/supporting signals, paper links, model version, policy used, request context, supplied evidence and SHA-256 receipt hash. Older records are labelled Earlier scoring model.
 
 **Review inbox and queue.** The inbox highlights held requests; Review queue lists pending decisions. A required note accompanies each human Allow or Deny. The resolved verdict is displayed without changing the original score or receipt. A resolved review cannot be reviewed again through this UI.
 
 **Policy editor.** Type thresholds or use sliders; review must be lower than deny. Save policy, discard edits, toggle correlation, and try a score in Decision preview. Changes apply to future evaluations; previewing alone creates no evaluation.
 
-**Four replay workflows, using default policy.** Known publisher install: score 0, Allowed. Young integration needs review: score 41, Needs review. Linked trust signals: URL 100, Denied, followed by skill 43, Needs review. Over-privileged unknown source: score 97, Denied. Replays use the real API and always get fresh session IDs.
+**Four replay workflows, using default policy.** Known publisher install: 0, Allowed. Young integration needs review: 50, Needs review. Linked trust signals: URL 100, Denied, then skill 75, Denied; correlation off makes the skill 25, Allowed. Over-privileged unknown source: 100, Denied. Replays use the real API and fresh sessions.
 
 **Storage, export and integration.** Evaluations, reviews and policy persist in data/state.json. Export the audit as JSON and verify the original evaluation chain offline. A local HTTP API supports evaluations, reviews, policy, replay, state retrieval, health and export; a cooperating caller must obey its decisions.
 
@@ -125,9 +125,9 @@ Existence and signature values are reports supplied by you, not independently ve
 
 **Does it verify the registry, website or signature?** No. Metadata and text come from the caller. URL checks parse the address locally. Live registry lookups, reputation feeds and signature verification are future work.
 
-**Is 41 a 41% chance of an attack?** No. It is a sum of configured heuristic points. A low score does not establish safety. The test fixtures are not a research benchmark, and detection accuracy has not been measured against the full planned corpus.
+**Is 50 a 50% chance of an attack?** No. It is a severity index using published weight ratios and our documented adaptations. A low score does not establish safety. Functional tests are not a labelled research benchmark; detection accuracy has not been measured.
 
-**What is special about correlation?** Earlier non-allowed evaluations of other artifact types in the same session can raise a later score. Matching names add another signal. The engine considers the latest 20 earlier session evaluations and their original policy decisions.
+**What is special about correlation?** Earlier non-allowed requests of other types can add 25 context points. A shared name strengthens that same group to 50; both are not added together. The latest 20 earlier session evaluations and their original policy decisions are considered. This uplift is a hypothesis awaiting evaluation.
 
 **Are receipts digitally signed?** No. Original evaluations are SHA-256 hash-linked. Verification can detect changed content or broken links, but cannot authenticate the author or detect an entirely rewritten chain. Review and policy events are recorded separately and are not authenticated by that chain.
 
@@ -137,7 +137,7 @@ Existence and signature values are reports supplied by you, not independently ve
 
 **The browser will not open the app / Gateway offline:** check that npm start is still running, use http://127.0.0.1:4318/, then choose Reconnect or the header refresh button. If the terminal says the port is already in use, check whether an existing MOSAIC server is already running.
 
-**A result differs from this guide:** restore review 35, deny 70 and correlation on. Use the exact example values and a new session ID. Do not interpret older records as new results: policy changes do not rescore them.
+**A result differs from this guide:** restore review 50, deny 75 and correlation on. Use exact values and a new session. Old records keep their earlier scoring model; replay or submit a fresh evaluation.
 
 **The review queue is empty:** replay Young integration needs review, or submit the example on page 3. **A request is missing:** clear type, decision, search and session filters, then check the next page. **The look appears outdated:** rebuild the project and refresh the browser.
 
@@ -148,3 +148,23 @@ npm run verify:audit -- "C:/path/to/mosaic-audit.json"
 ```
 
 For an optional pre-presentation check, run npm run check and npm run test:browser. Browser tests use installed Edge on Windows; on other platforms, install the test browser with npx playwright install chromium first. These tests use separate temporary data, leaving your saved presentation records intact.
+
+<!-- page -->
+
+# 6. Explain the weights to the panel
+
+**Source of the numbers:** Zahan et al., "OpenSSF Scorecard: On the Path Toward Ecosystem-Wide Automated Security Metrics," IEEE Security & Privacy, 21(6), 76-88, 2023. DOI: 10.1109/MSEC.2023.3279773. Section II explicitly reports Low 2.5, Medium 5, High 7.5 and Critical 10. Read the accessible author manuscript at https://arxiv.org/html/2208.03412v3#S2.
+
+**Why 25, 50 and 75?** We multiply those published severity weights by ten to use a 0-100 display. The 1:2:3:4 ratios remain unchanged. They express priority, not attack probabilities. Critical 100 is reserved for a future independently confirmed-threat detector; current combined scores can reach the 100 cap.
+
+**Why these categories?** Weak proxies such as uncertain provenance or encoding are Low. A trust-boundary concern or stronger linked identifier is Medium. Reported nonexistence, remote execution patterns or instruction overrides get conservative High priority. The papers support these concerns; MOSAIC assigns the categories. There has been no independent expert validation yet.
+
+**Why remove age/download penalties?** We found no basis for universal "under 7 days" or "under 50 downloads" boundaries. Popular projects can be compromised and new projects can be legitimate. These fields remain context for the reviewer.
+
+**Why group the points?** Unknown existence and unsigned status both concern provenance. Generic earlier activity and a shared name both concern session context. Taking the strongest within each group avoids counting the same family repeatedly. This is our transparent design choice, not Scorecard's original weighted-average algorithm.
+
+**Why review 50 and deny 75?** These boundaries correspond to one Medium and one High concern. They are operational policy choices tied to the severity scale. They are not claimed to optimise false positives or detection.
+
+**Presentation wording:** "We adopted a severity-weight scale documented in peer-reviewed IEEE research. Security conference papers motivate our signals. We adapted the scale for agent requests, grouped related evidence, and provide the full calculation. The MVP is a reproducible risk rubric; final accuracy and thresholds will be calibrated on labelled benign and malicious workflows."
+
+**Supporting conference papers:** Spracklen et al., USENIX Security 2025, on hallucinated packages; Ohm et al., DIMVA 2020, on malicious supply-chain attacks; Sejfia and Schäfer, ACM/IEEE ICSE 2022, on malicious npm detection; Abdelnabi et al., ACM AISec 2023, on indirect prompt injection. Complete references and every signal's rationale are in MOSAIC-Scoring-Rationale.pdf and docs/SCORING.md.

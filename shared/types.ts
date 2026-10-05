@@ -8,13 +8,20 @@ export interface ArtifactRequest {
   content?: string;
   metadata?: { exists?: boolean; ageDays?: number; downloads?: number; signed?: boolean; permissions?: string[] };
 }
-export interface Signal { id: string; label: string; score: number; weight: number; reason: string }
+export interface Signal {
+  id: string; label: string; score: number; weight: number; reason: string;
+  severity?: import('./scoring').Severity;
+  group?: import('./scoring').EvidenceGroup;
+  sources?: readonly import('./scoring').ScoringSource[];
+}
 export interface Policy { reviewThreshold: number; denyThreshold: number; correlationEnabled: boolean }
 export interface Evaluation {
   id: string; timestamp: string; request: ArtifactRequest; score: number;
   decision: Decision; signals: Signal[]; durationMs: number;
   review?: { decision: 'allow' | 'deny'; note: string; timestamp: string };
   receipt: { hash: string; previousHash: string };
+  scoringVersion?: string;
+  policySnapshot?: Policy;
 }
 export interface Scenario { id: string; title: string; description: string; requests: ArtifactRequest[] }
 export interface AppState { evaluations: Evaluation[]; policy: Policy; scenarios: Scenario[] }

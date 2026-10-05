@@ -3,13 +3,14 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { AppState, ArtifactRequest, Decision, Evaluation, Policy, Scenario, Signal } from '../shared/types.js';
 import { defaultPolicy } from './engine.js';
+import { SCORING_VERSION } from '../shared/scoring.js';
 
 export const DEFAULT_POLICY: Policy = defaultPolicy;
 
 interface AuditEvent {
   id: string;
   timestamp: string;
-  type: 'evaluation' | 'review' | 'policy';
+  type: 'evaluation' | 'review' | 'policy' | 'scoring-model';
   evaluationId?: string;
   detail: Record<string, unknown>;
 }
@@ -19,6 +20,7 @@ interface PersistedState {
   evaluations: Evaluation[];
   policy: Policy;
   audit: AuditEvent[];
+  scoringVersion?: string;
 }
 
 const canonical = (value: unknown) => JSON.stringify(value);
@@ -26,7 +28,7 @@ const receiptPayload = (evaluation: Omit<Evaluation, 'receipt' | 'review'>) => c
 const digest = (previousHash: string, payload: string) => createHash('sha256').update(`${previousHash}:${payload}`).digest('hex');
 
 export class StateStore {
-  private state: PersistedState = { version: 1, evaluations: [], policy: { ...DEFAULT_POLICY }, audit: [] };
+  private state: PersistedState = { version: 1, evaluations: [], policy: { ...DEFAULT_POLICY }, audit: [], scoringVersion: SCORING_VERSION };
   private readonly file: string;
   private mutation: Promise<void> = Promise.resolve();
 
@@ -39,6 +41,16 @@ export class StateStore {
       const raw = JSON.parse(await readFile(this.file, 'utf8')) as PersistedState;
       if (!raw || raw.version !== 1 || !Array.isArray(raw.evaluations) || !raw.policy || !Array.isArray(raw.audit)) throw new Error('Invalid persisted MOSAIC state');
       this.state = raw;
+      if (raw.scoringVersion !== SCORING_VERSION) {
+        const previousPolicy = { ...raw.policy };
+        // Upgrade old factory defaults; custom thresholds and original receipts stay intact.
+        if (raw.policy.reviewThreshold === 35 && raw.policy.denyThreshold === 70) {
+          raw.policy = { ...DEFAULT_POLICY, correlationEnabled: raw.policy.correlationEnabled };
+        }
+        raw.audit.push({ id: randomUUID(), timestamp: new Date().toISOString(), type: 'scoring-model', detail: { previousVersion: raw.scoringVersion ?? 'heuristic-v1', scoringVersion: SCORING_VERSION, previousPolicy, policy: { ...raw.policy } } });
+        raw.scoringVersion = SCORING_VERSION;
+        await this.persist();
+      }
     } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
       await this.persist();
@@ -70,7 +82,7 @@ export class StateStore {
 
   async evaluate(
     request: ArtifactRequest,
-    assess: (request: ArtifactRequest, history: Evaluation[], policy: Policy) => { score: number; decision: Decision; signals: Signal[] },
+    assess: (request: ArtifactRequest, history: Evaluation[], policy: Policy) => { score: number; decision: Decision; signals: Signal[]; scoringVersion?: string; policySnapshot?: Policy },
   ): Promise<Evaluation> {
     return this.transact(() => {
       const started = performance.now();
