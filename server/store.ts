@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import type { AppState, ArtifactRequest, Decision, Evaluation, Policy, Scenario, Signal } from '../shared/types.js';
+import type { AppState, ArtifactRequest, Decision, Evaluation, Policy, Scenario, Signal, ScoringBreakdown } from '../shared/types.js';
 import { defaultPolicy } from './engine.js';
 import { SCORING_VERSION } from '../shared/scoring.js';
 
@@ -44,7 +44,7 @@ export class StateStore {
       if (raw.scoringVersion !== SCORING_VERSION) {
         const previousPolicy = { ...raw.policy };
         // Upgrade old factory defaults; custom thresholds and original receipts stay intact.
-        if (raw.policy.reviewThreshold === 35 && raw.policy.denyThreshold === 70) {
+        if ((raw.policy.reviewThreshold === 35 && raw.policy.denyThreshold === 70) || (raw.policy.reviewThreshold === 50 && raw.policy.denyThreshold === 75)) {
           raw.policy = { ...DEFAULT_POLICY, correlationEnabled: raw.policy.correlationEnabled };
         }
         raw.audit.push({ id: randomUUID(), timestamp: new Date().toISOString(), type: 'scoring-model', detail: { previousVersion: raw.scoringVersion ?? 'heuristic-v1', scoringVersion: SCORING_VERSION, previousPolicy, policy: { ...raw.policy } } });
@@ -82,7 +82,7 @@ export class StateStore {
 
   async evaluate(
     request: ArtifactRequest,
-    assess: (request: ArtifactRequest, history: Evaluation[], policy: Policy) => { score: number; decision: Decision; signals: Signal[]; scoringVersion?: string; policySnapshot?: Policy },
+    assess: (request: ArtifactRequest, history: Evaluation[], policy: Policy) => { score: number; decision: Decision; signals: Signal[]; scoringVersion?: string; policySnapshot?: Policy; scoringBreakdown?: ScoringBreakdown },
   ): Promise<Evaluation> {
     return this.transact(() => {
       const started = performance.now();

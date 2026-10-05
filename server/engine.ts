@@ -1,5 +1,5 @@
-import type { ArtifactRequest, Decision, Evaluation, Policy, Signal } from '../shared/types';
-import { EVIDENCE_GROUPS, RECOMMENDED_POLICY, SCORING_VERSION, SEVERITY_WEIGHTS, SIGNAL_RULES, type EvidenceGroup, type SignalId } from '../shared/scoring';
+import type { ArtifactRequest, Decision, Evaluation, Policy, Signal, ScoringBreakdown } from '../shared/types';
+import { EVIDENCE_GROUPS, RECOMMENDED_POLICY, SCORING_VERSION, SEVERITY_WEIGHTS, SIGNAL_RULES, scoringProfile, type EvidenceGroup, type SignalId } from '../shared/scoring';
 
 /** Conservative defaults for the local, deterministic MVP evaluator. */
 export const defaultPolicy: Policy = { ...RECOMMENDED_POLICY };
@@ -19,17 +19,44 @@ function signal(id: SignalId, reason: string): Signal {
   return { id, label: rule.label, score: SEVERITY_WEIGHTS[rule.severity] * 10, weight: 1, reason, severity: rule.severity, group: rule.group, sources: rule.sources };
 }
 
-/** Keep only the strongest contribution in each evidence family, retaining every explanation. */
-function groupSignals(signals: Signal[]): Signal[] {
+/** A normalized weighted average. The full applicable capacity is fixed before matching. */
+export function scoreSignals(type: ArtifactRequest['type'], signals: Signal[]): { score: number; signals: Signal[]; scoringBreakdown: ScoringBreakdown } {
+  const profile = scoringProfile(type);
+  const normalizationTotal = profile.reduce((total, item) => total + item.capacity, 0);
   const winners = new Map<EvidenceGroup, Signal>();
   for (const item of signals) {
+    if (!item.group || !profile.some((entry) => entry.group === item.group)) throw new Error('Signal group is not applicable to this request');
+    const capacity = profile.find((entry) => entry.group === item.group)!.capacity;
+    if (item.score < 0 || item.score > capacity) throw new Error('Signal severity exceeds its configured group capacity');
     const winner = winners.get(item.group!);
     if (!winner || item.score > winner.score) winners.set(item.group!, item);
   }
-  return signals.map((item) => {
-    const winner = winners.get(item.group!)!;
-    return winner === item ? item : { ...item, weight: 0, reason: `${item.reason} Included in the ${EVIDENCE_GROUPS[item.group!]} group; ${winner.label} supplies that group's strongest contribution. This signal adds no extra points.` };
+  const rawTotal = [...winners.values()].reduce((total, item) => total + item.score, 0);
+  const targetCents = Math.round(rawTotal / normalizationTotal * 10000);
+  const groups = profile.map(({ group, capacity }) => {
+    const rawSeverity = winners.get(group)?.score ?? 0;
+    const exactCents = rawSeverity / normalizationTotal * 10000;
+    const cents = Math.floor(exactCents + 1e-9);
+    return { group, capacity, rawSeverity, weight: capacity / normalizationTotal, cents, remainder: exactCents - cents };
   });
+  // Allocate at most one rounding cent per group so displayed contributions sum exactly.
+  const remainderCents = targetCents - groups.reduce((sum, item) => sum + item.cents, 0);
+  const roundingOrder = [...groups].sort((a, b) => b.remainder - a.remainder);
+  for (let index = 0; index < remainderCents; index += 1) roundingOrder[index].cents += 1;
+  const contributions = new Map(groups.map((item) => [item.group, item.cents / 100]));
+  const weightedSignals = signals.map((item) => {
+    const winner = winners.get(item.group!)!;
+    const capacity = profile.find((entry) => entry.group === item.group)!.capacity;
+    const normalized = { ...item, rawSeverity: item.score, score: 100 * item.score / capacity };
+    return winner === item
+      ? { ...normalized, weight: capacity / normalizationTotal, contribution: contributions.get(item.group!)! }
+      : { ...normalized, weight: 0, contribution: 0, reason: `${item.reason} Included in the ${EVIDENCE_GROUPS[item.group!]} group; ${winner.label} supplies that group's strongest contribution. This signal adds no extra points.` };
+  });
+  return {
+    score: targetCents / 100,
+    signals: weightedSignals,
+    scoringBreakdown: { normalizationTotal, rawTotal, groups: groups.map(({ group, capacity, rawSeverity, weight, cents }) => ({ group, capacity, rawSeverity, weight, contribution: cents / 100 })) },
+  };
 }
 
 function normalizeName(name: string): string {
@@ -77,7 +104,7 @@ export function evaluateRisk(
   request: ArtifactRequest,
   history: Evaluation[],
   policy: Policy,
-): { score: number; decision: Decision; signals: Signal[]; scoringVersion: string; policySnapshot: Policy } {
+): { score: number; decision: Decision; signals: Signal[]; scoringVersion: string; policySnapshot: Policy; scoringBreakdown: ScoringBreakdown } {
   const signals: Signal[] = [];
   const metadata = request.metadata;
 
@@ -142,7 +169,6 @@ export function evaluateRisk(
     if (nameMatch) signals.push(signal('name-correlation', 'A prior non-allowed artifact of another type used the same normalized name. The stronger contextual cue replaces the generic history contribution; its severity is a MOSAIC research hypothesis.'));
   }
 
-  const grouped = groupSignals(signals);
-  const score = Math.min(100, grouped.reduce((total, item) => total + item.score * item.weight, 0));
-  return { score, decision: deriveDecision(score, policy), signals: grouped, scoringVersion: SCORING_VERSION, policySnapshot: { ...policy } };
+  const result = scoreSignals(request.type, signals);
+  return { ...result, decision: deriveDecision(result.score, policy), scoringVersion: SCORING_VERSION, policySnapshot: { ...policy } };
 }

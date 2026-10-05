@@ -1,6 +1,6 @@
 /** Literature-sourced ordinal weights; MOSAIC's classifications are adaptations. */
-export const SCORING_VERSION = 'severity-v2';
-export const RECOMMENDED_POLICY = { reviewThreshold: 50, denyThreshold: 75, correlationEnabled: true };
+export const SCORING_VERSION = 'weighted-v3';
+export const RECOMMENDED_POLICY = { reviewThreshold: 20, denyThreshold: 50, correlationEnabled: true };
 export const SEVERITY_WEIGHTS = { low: 2.5, medium: 5, high: 7.5, critical: 10 } as const;
 export type Severity = keyof typeof SEVERITY_WEIGHTS;
 export const EVIDENCE_GROUPS = {
@@ -42,3 +42,18 @@ export const SIGNAL_RULES = {
   'name-correlation': { label: 'Cross-artifact name reuse', severity: 'medium', group: 'context', sources: ['injection', 'hallucination'] },
 } as const satisfies Record<string, { label: string; severity: Severity; group: EvidenceGroup; sources: readonly ScoringSource[] }>;
 export type SignalId = keyof typeof SIGNAL_RULES;
+
+/** All applicable groups remain in the denominator, including those with no matches. */
+export function scoringProfile(type: 'package' | 'skill' | 'mcp' | 'url') {
+  return (Object.keys(EVIDENCE_GROUPS) as EvidenceGroup[])
+    .filter((group) => type === 'url' || group !== 'transport')
+    .map((group) => ({
+      group,
+      capacity: Math.max(...Object.values(SIGNAL_RULES)
+        .filter((rule) => rule.group === group)
+        .map((rule) => SEVERITY_WEIGHTS[rule.severity] * 10)),
+    }));
+}
+
+export const signalContribution = (signal: { score: number; weight: number; contribution?: number }) =>
+  signal.contribution ?? signal.score * signal.weight;

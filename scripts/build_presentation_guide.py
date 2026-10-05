@@ -68,7 +68,7 @@ def build_guide(source_path, output_path, label):
 
     doc = SimpleDocTemplate(str(output_path), pagesize=A4, rightMargin=48, leftMargin=48,
                             topMargin=42, bottomMargin=46, title=label,
-                            author="MOSAIC project", subject="Scoring v2 and presentation documentation")
+                            author="MOSAIC project", subject="Normalized weighted scoring v3 and presentation documentation")
     doc.build(story, onFirstPage=footer, onLaterPages=footer)
     print(output_path)
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { signalContribution } from "../shared/scoring";
 import {
   Activity,
   ArrowDownToLine,
@@ -1032,7 +1033,7 @@ export default function App() {
                                 <strong>{e.request.name}</strong>
                                 <p>
                                   {[...e.signals].sort(
-                                    (a, b) => b.score - a.score,
+                                    (a, b) => signalContribution(b) - signalContribution(a),
                                   )[0]?.label ?? "Policy threshold reached"}
                                 </p>
                                 <span className="review-card-action">

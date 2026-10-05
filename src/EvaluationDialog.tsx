@@ -16,7 +16,7 @@ import type {
   ArtifactType,
   Evaluation,
 } from "../shared/types";
-import { EVIDENCE_GROUPS, SCORING_SOURCES, SCORING_VERSION } from "../shared/scoring";
+import { EVIDENCE_GROUPS, SCORING_SOURCES, SCORING_VERSION, signalContribution } from "../shared/scoring";
 import {
   ArtifactIcon,
   Badge,
@@ -158,17 +158,34 @@ export function EvaluationDialog({
             <div className="scoring-explanation">
               {selected.scoringVersion === SCORING_VERSION ? (
                 <>
-                  <strong>Literature-based severity scale · v2</strong>
-                  <p>Low 25 · Medium 50 · High 75 · Critical 100. Only the strongest signal in each evidence group adds points; the total is capped at 100. Age and downloads are context only.</p>
-                  <p>Weights follow <a href={SCORING_SOURCES.weights.url} target="_blank" rel="noreferrer">Zahan et al., IEEE Security &amp; Privacy (2023)</a>. Signal classifications and grouping are MOSAIC adaptations, awaiting benchmark calibration.</p>
+                  <strong>Normalized weighted score · v3</strong>
+                  <p>Each applicable evidence group has a fixed share of a 100-point budget. Severity ratings are weighted against the full available capacity. Age and downloads are context only.</p>
+                  <p>The severity scale and weighted-average method follow <a href={SCORING_SOURCES.weights.url} target="_blank" rel="noreferrer">Zahan et al., IEEE Security &amp; Privacy (2023)</a>. Grouping and signal classifications remain MOSAIC adaptations.</p>
                 </>
               ) : (
                 <>
-                  <strong>Earlier scoring model · v1</strong>
-                  <p>This saved result uses the original heuristic weights. Submit a new evaluation to use the revised model.</p>
+                  <strong>Earlier scoring model · {selected.scoringVersion ?? "heuristic-v1"}</strong>
+                  <p>This saved result retains its previous calculation. Submit a new evaluation to use the normalized weighted model.</p>
                 </>
               )}
             </div>
+            {selected.scoringBreakdown && (
+              <div className="scoring-calculation" aria-label="Score calculation">
+                <h3>How the score adds up</h3>
+                <p>Available capacity: {selected.scoringBreakdown.groups.map((group) => group.capacity).join(" + ")} = {selected.scoringBreakdown.normalizationTotal}. Weights sum to 100%.</p>
+                <div className="scoring-calculation-rows">
+                  {selected.scoringBreakdown.groups.map((group) => (
+                    <div key={group.group}>
+                      <span>{EVIDENCE_GROUPS[group.group]}<small>Weight {group.capacity}/{selected.scoringBreakdown!.normalizationTotal}{Number.isInteger(group.weight * 100) ? ` = ${group.weight * 100}%` : ""}</small></span>
+                      <span>{group.rawSeverity} × 100/{selected.scoringBreakdown!.normalizationTotal}</span>
+                      <strong>{group.contribution}</strong>
+                    </div>
+                  ))}
+                  <div className="scoring-calculation-total"><span>Total</span><span>{selected.scoringBreakdown.rawTotal}/{selected.scoringBreakdown.normalizationTotal} × 100</span><strong>{selected.score}/100</strong></div>
+                </div>
+                <p>Unmatched groups contribute 0. Contributions are rounded to two decimals together so the displayed sum matches the total.</p>
+              </div>
+            )}
             <div className="inspector-section">
               <div className="subheading">
                 <h3>What informed this decision</h3>
@@ -176,7 +193,7 @@ export function EvaluationDialog({
               </div>
               {selected.signals.length ? (
                 [...selected.signals]
-                  .sort((a, b) => b.score * b.weight - a.score * a.weight)
+                  .sort((a, b) => signalContribution(b) - signalContribution(a))
                   .map((s) => (
                     <div
                       className={`signal ${s.id.includes("correlation") ? "correlated" : ""}`}
@@ -191,11 +208,11 @@ export function EvaluationDialog({
                           )}
                           {s.label}
                         </span>
-                        <strong>+{s.score * s.weight}</strong>
+                        <strong>+{signalContribution(s)}</strong>
                       </div>
                       <p>{s.reason}</p>
                       {s.group && s.severity && (
-                        <small className="signal-method">{s.severity} · {EVIDENCE_GROUPS[s.group]} · {s.weight === 0 ? `${s.score} base points, already covered` : `${s.score} points included`}</small>
+                        <small className="signal-method">{s.severity} · {EVIDENCE_GROUPS[s.group]} · Severity {s.rawSeverity ?? s.score}{s.weight === 0 ? ", already covered" : ` × 100/${selected.scoringBreakdown?.normalizationTotal ?? 100} ${Math.abs(s.score * s.weight - signalContribution(s)) < 1e-9 ? "=" : "≈"} ${signalContribution(s)} points`}</small>
                       )}
                       {s.sources?.length ? (
                         <details className="signal-sources">
@@ -205,7 +222,7 @@ export function EvaluationDialog({
                         </details>
                       ) : null}
                       <div className="signal-track">
-                        <i style={{ width: `${s.score * s.weight}%` }} />
+                        <i style={{ width: `${signalContribution(s)}%` }} />
                       </div>
                     </div>
                   ))

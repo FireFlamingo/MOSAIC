@@ -3,7 +3,7 @@
 Start with `npm run build` and `npm start`, then open http://127.0.0.1:4318.
 
 1. **Overview:** Explain that the stored observations are synthetic fixtures evaluated by the real local scoring engine. Counts and the stream come from persisted data.
-2. **Replay workflow → Linked trust signals:** With review 50 and deny 75, the URL scores 100 and is denied. The skill scores 75 and is denied: unsigned provenance contributes 25 and shared-name context contributes 50. Generic context is retained with no extra points. Turn correlation off, save and replay: the skill scores 25 and is allowed.
+2. **Replay workflow → Linked trust signals:** With review 20 and deny 50, the URL scores 50 and is denied. The skill scores 30 and needs review: unsigned provenance contributes 10 and shared-name context contributes 20. Generic context adds no extra points. Turn correlation off, save and replay: the skill scores 10 and is allowed.
 3. **Review inbox:** Inspect a held request, enter a reason, then allow or deny it. The decision updates in the stream; the original assessment remains in its receipt.
 4. **Policy:** Try the score slider. The preview shows where allow, review, and deny boundaries apply without recording an evaluation. Change a threshold, save it, and replay a workflow to see the new policy used.
 5. **New evaluation:** Submit a package, skill, MCP server, or URL. Optional content and permissions appear under the expandable evidence section. The gateway only inspects supplied information; it never executes the artifact.

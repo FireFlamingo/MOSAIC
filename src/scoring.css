@@ -8,3 +8,10 @@
 .signal-sources a { display: block; line-height: 1.7; margin: 5px 0; }
 .signal-sources p { line-height: 1.5; }
 .scoring-policy-note { margin-bottom: 16px; }
+.scoring-calculation { margin: 24px 0; font-size: 11px; }
+.scoring-calculation h3 { font-size: 13px; margin: 0 0 10px; }
+.scoring-calculation p { color: #656565; line-height: 1.6; }
+.scoring-calculation-rows > div { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.scoring-calculation-rows small { display: block; font-size: 10px; color: #656565; margin-top: 4px; }
+.scoring-calculation-total { font-weight: 650; }
+@media (max-width: 480px) { .scoring-calculation-rows > div { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 6px; font-size: 10px; } }

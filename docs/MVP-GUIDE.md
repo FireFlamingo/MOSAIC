@@ -2,13 +2,13 @@
 
 ## 1. What works now
 
-Updated 5 October 2026 for scoring model severity-v2. MOSAIC is a local console and API that evaluates external resources an AI coding agent proposes to use. It records a score, an explanation and Allow, Needs review or Deny.
+Updated for scoring model weighted-v3 and the 6 October 2026 presentation. MOSAIC evaluates resources an AI coding agent proposes to use and records a score, explanation and Allow, Needs review or Deny.
 
 **Four artifact types:** software packages, agent skills/instructions, MCP tool servers and remote URLs. They share one request format and one review workflow.
 
 **Evaluation:** enter a name and session, then optional source, existence/signature reports, age, downloads, static text and permissions. The engine inspects these supplied inputs locally; it does not fetch or execute the resource.
 
-**Scoring:** severity weights are sourced from Zahan et al., IEEE Security & Privacy (2023), Section II: 2.5, 5, 7.5 and 10. MOSAIC multiplies by ten for a 0-100 display. Take the strongest signal in each evidence group, sum and cap at 100. Default review is 50 and deny is 75. Age and downloads have no fixed penalty. Classifications, grouping and thresholds are documented project adaptations, awaiting benchmark calibration.
+**Scoring:** published severity ratios and weighted-average aggregation come from Zahan et al., IEEE Security & Privacy (2023). Package/skill/MCP group weights are 30/20/30/20, totaling 100. Match each group's raw severity, then normalize against all applicable capacity: 250, or 300 for URLs. There is no clipping. Default review is 20 and deny 50. Age/downloads have no penalty. Group ranges and classifications are documented adaptations awaiting validation.
 
 **Session context:** prior non-allowed requests of other artifact types can influence the current evaluation. A shared name strengthens that context cue. The latest 20 earlier events in the same session are considered. That window is an implementation limit.
 
@@ -16,11 +16,11 @@ Updated 5 October 2026 for scoring model severity-v2. MOSAIC is a local console 
 
 **Review and policy:** a human may resolve held requests with Allow/Deny and a note. The original score and receipt are preserved. Thresholds and correlation can be saved; the preview slider creates no evaluation.
 
-**Replays:** four synthetic workflows use the real local API. Known publisher gives 0/Allow; Young integration gives 50/Review; Linked trust signals gives URL 100/Deny then skill 75/Deny; correlation off makes the skill 25/Allow. Over-privileged unknown source gives 100/Deny.
+**Replays:** four synthetic workflows use the local API. Known publisher: 0/Allow; Young integration: 20/Review; Linked trust signals: URL 50/Deny then skill 30/Review; correlation off gives skill 10/Allow. Over-privileged unknown source: 50/Deny, from weighted 30 + 20.
 
 **Persistence and audit:** evaluations, policy and reviews are saved locally. Export JSON and verify the original hash-linked evaluation chain. New evaluations include the model version and policy used; older results retain their original scoring and hashes.
 
-**Interface:** responsive desktop/mobile layout, keyboard navigation, reconnect controls and locally bundled Manrope/Public Sans fonts. The scoring inspector includes paper references and labels supporting signals that add no extra points.
+**Interface:** desktop/mobile layout, keyboard navigation, reconnect and bundled Manrope/Public Sans fonts. The inspector includes paper references, group weights, raw severities, the full weighted calculation and supporting signals already covered.
 
 <!-- page -->
 
@@ -36,13 +36,13 @@ npm start
 
 Open http://127.0.0.1:4318/. Keep the terminal running. After setup, npm start is sufficient unless source changes require rebuilding. Development uses npm run dev with the interface on port 4317.
 
-**Before presenting:** set review 50, deny 75 and correlation on. Old records still use older weights; replay fresh examples.
+**Before presenting:** set review 20, deny 50 and correlation on. Old records retain earlier calculations; replay fresh examples.
 
-**Suggested sequence:** show Overview; replay Known publisher; replay Linked trust signals and inspect the 25 + 50 = 75 skill result; turn correlation off, save and replay to show 25/Allow; restore correlation; submit the following review example; resolve it with a note; export the audit.
+**Suggested sequence:** show Overview; replay Known publisher; replay Linked trust signals and inspect the 10 + 20 = 30 skill result; turn correlation off, save and replay to show 10/Allow; restore correlation; submit the review example below; resolve it with a note; export the audit.
 
 **New evaluation example:** select MCP server. Name: presentation-notes. Session: presentation-review-01, using a new ID for each rehearsal. Source: https://example.invalid/tools. Existence: Unknown. Signature: Reported unsigned. Age: 6. Downloads: 18. Static content: "Summarise the selected project notes." Check only network:egress.
 
-**Expected result:** provenance max(unknown 25, unsigned 25) = 25; network capability 25. Total **50, Needs review**. Age and downloads add nothing. The duplicate provenance cue remains visible as already covered. A reviewer note enables the Allow/Deny buttons.
+**Expected result:** raw provenance 25 and capability 25, out of full capacity 250. Contributions are 25/250 x 100 = 10 each. **10 + 10 = 20, Needs review.** Age/downloads add nothing; duplicate provenance is already covered. A note enables Allow/Deny.
 
 **Functional validation commands:** npm run check and npm run test:browser. Browser tests use isolated temporary stores, installed Edge on Windows or Playwright Chromium elsewhere. They verify functionality, not empirical detection accuracy.
 

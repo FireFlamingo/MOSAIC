@@ -13,6 +13,13 @@ export interface Signal {
   severity?: import('./scoring').Severity;
   group?: import('./scoring').EvidenceGroup;
   sources?: readonly import('./scoring').ScoringSource[];
+  contribution?: number;
+  rawSeverity?: number;
+}
+export interface ScoringBreakdown {
+  normalizationTotal: number;
+  rawTotal: number;
+  groups: Array<{ group: import('./scoring').EvidenceGroup; capacity: number; rawSeverity: number; weight: number; contribution: number }>;
 }
 export interface Policy { reviewThreshold: number; denyThreshold: number; correlationEnabled: boolean }
 export interface Evaluation {
@@ -22,6 +29,7 @@ export interface Evaluation {
   receipt: { hash: string; previousHash: string };
   scoringVersion?: string;
   policySnapshot?: Policy;
+  scoringBreakdown?: ScoringBreakdown;
 }
 export interface Scenario { id: string; title: string; description: string; requests: ArtifactRequest[] }
 export interface AppState { evaluations: Evaluation[]; policy: Policy; scenarios: Scenario[] }

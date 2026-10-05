@@ -13,7 +13,7 @@ import type {
   Evaluation,
   Policy,
 } from "../shared/types";
-import { RECOMMENDED_POLICY } from "../shared/scoring";
+import { RECOMMENDED_POLICY, signalContribution } from "../shared/scoring";
 export const TYPES: ArtifactType[] = ["package", "skill", "mcp", "url"];
 export const typeLabel = {
   package: "Package",
@@ -53,7 +53,7 @@ export const shortSession = (id: string) =>
 export const correlation = (e: Evaluation) =>
   e.signals
     .filter((s) => s.id.includes("correlation"))
-    .reduce((sum, s) => sum + s.score * s.weight, 0);
+    .reduce((sum, s) => sum + signalContribution(s), 0);
 export function Badge({ decision }: { decision: Decision }) {
   const Icon = decisionIcon[decision];
   return (

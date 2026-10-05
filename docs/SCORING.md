@@ -1,21 +1,21 @@
-# MOSAIC scoring: severity-v2
+# MOSAIC scoring: weighted-v3
 
 The numerical severity scale is sourced from **Zahan et al., "OpenSSF Scorecard: On the Path Toward Ecosystem-Wide Automated Security Metrics," IEEE Security & Privacy 21(6), 76-88, 2023**, DOI [10.1109/MSEC.2023.3279773](https://doi.org/10.1109/MSEC.2023.3279773). The [author manuscript, Section II](https://arxiv.org/html/2208.03412v3#S2) explicitly reports Low = 2.5, Medium = 5, High = 7.5, Critical = 10.
 
-MOSAIC uses `points = 10 * published severity weight`, giving **25 / 50 / 75 / 100** on the existing display. Multiplication changes units and preserves the 1:2:3:4 ratios; it does not create probabilities. The original individually chosen values have been replaced.
+MOSAIC uses **raw severity ratings** of 25 / 50 / 75 / 100, preserving the published 2.5 / 5 / 7.5 / 10 ratios. These ratings are not additive contributions. A fixed normalized weighted average converts each group's rating into its share of the full 100-point assessment budget. The total is naturally bounded; there is no clipping operation.
 
-**Citation scope:** the paper studies repository security practices, using a weighted average of check scores. It does not train an agent-request detector or assign coefficients to MOSAIC's signals. Signal classifications, maximum-per-group aggregation and decision policy below are **MOSAIC adaptations**, awaiting expert review and benchmark calibration. The sources establish why each concern matters, not a measured effect size.
+**Citation scope:** the paper supplies severity weights and describes weighted-average aggregation for repository security practices. MOSAIC uses that mathematical form with its own groups and declared ranges. It does not implement the full Scorecard checks or claim that their authors validated agent-request coefficients. Signal classifications, group definitions, range selection and decision thresholds are **MOSAIC adaptations**, awaiting expert review and benchmark calibration.
 
 ## Classification rubric
 
 - Low (25): uncertain or non-specific evidence, or a generally legitimate capability. Unknown existence, reported unsigned status, environment-variable use, encoding and network capability are weak cues.
 - Medium (50): a structural trust-boundary concern or a stronger contextual association warranting review. Lookalike names, private/non-HTTPS destinations, secrets access and linked identifiers fall here.
-- High (75): an explicit unavailable-artifact report, remote-download-to-shell pattern or instruction to override security guidance. High expresses conservative intervention priority, not proof of maliciousness.
-- Critical (100): a single-signal level reserved for future independently confirmed threats. No current detector assigns Critical. Combined group contributions may still reach the 100 cap.
+- High (severity 75): an explicit unavailable-artifact report, remote-download-to-shell pattern or instruction to override security guidance. Severity expresses concern strength, not proof of maliciousness or an automatic decision.
+- Critical (severity 100): reserved for future independently confirmed threats; no current detector uses it. A final score of 100 means every applicable group reached its declared maximum, not that an attack is certain.
 
 ## Rules and backing
 
-| Signal | Base points | Group | Rationale and source |
+| Signal | Raw severity | Group | Rationale and source |
 | --- | ---: | --- | --- |
 | Artifact reported missing | 75 | Identity & provenance | Request cannot be fulfilled as identified. Spracklen et al., USENIX Security 2025, documents package hallucination and its attack surface. Only a caller report is used here; no registry check. |
 | Existence unverified | 25 | Identity & provenance | Missing evidence is weaker than reported nonexistence. This distinction is a MOSAIC policy judgement motivated by the same research. |
@@ -35,31 +35,52 @@ MOSAIC uses `points = 10 * published severity weight`, giving **25 / 50 / 75 / 1
 
 Age and download count are visible context with **zero points**. No transferable evidence was found for universal 7-day or 50-download cutoffs in the reviewed papers. These features could still be useful in a trained, ecosystem-specific model.
 
-## Aggregation and decisions
+## Fixed weights and normalized aggregation
+
+For package, skill and MCP requests, the applicable group ranges and weights are:
+
+| Group | Maximum supported severity C_g | Weight C_g / 250 | Maximum contribution |
+| --- | ---: | ---: | ---: |
+| Identity & provenance | 75 | 30% | 30 |
+| Requested capabilities | 50 | 20% | 20 |
+| Static content | 75 | 30% | 30 |
+| Session context | 50 | 20% | 20 |
+| Total | 250 | 100% | 100 |
+
+Each range is the highest severity in the declared detector catalog for that group. This avoids inventing additional percentage weights: 75/250 = 30%, 50/250 = 20%. It remains a documented range-selection adaptation, not an empirically fitted importance estimate.
+
+URLs additionally include URL & transport with capacity 50. Their fixed denominator is **300**; weights in the order provenance/capabilities/content/transport/context are **1/4, 1/6, 1/4, 1/6, 1/6**. These sum to one. Transport is excluded for non-URL requests because their source label is not evaluated as a URL by this MVP.
+
+Let S_g be the strongest matched raw severity in group g, or zero, and C_g its configured maximum:
 
 ```text
-group_points(g) = max(base points of signals in group g, default=0)
-score = min(100, sum(group_points(g)))
+group weight w_g = C_g / sum(C_g)
+group rating r_g = S_g / C_g
+contribution_g = 100 * w_g * r_g
+score = sum(contribution_g)
+      = 100 * sum(S_g) / sum(C_g)
 ```
 
-Within each of the five groups, only the strongest signal contributes; ties use the first detected signal. All explanations are retained: contributing signals have `weight=1`, others `weight=0`. Grouping reduces repeated penalties for related concerns; it does not assert independence between groups.
+Since weights sum to one and each group rating is between zero and one, the total is between **0 and 100 by construction**. No post-hoc cap is used. The denominator includes all applicable groups, including unmatched groups, and does not change when correlation is disabled or metadata is omitted. Normalizing only matched signals would inflate sparse evidence and is not done.
 
-Defaults: **review 50, deny 75, correlation on**. One Medium concern reaches review; one High concern reaches deny. Scores 0-49 allow, 50-74 review, 75-100 deny. Two Low concerns in different groups also reach review. These are operational boundaries tied to severity categories, not empirically optimal thresholds.
+Only the strongest cue within a group supplies its rating; others remain visible with zero additional contribution. API fields retain `rawSeverity`, `score = 100 * S_g / C_g`, normalized `weight = C_g / denominator`, and the two-decimal `contribution`. The complete profile includes every applicable group and its weight. Contributions are rounded together using the largest fractional remainders so they sum exactly to the displayed total. Rounding changes at most a cent, not the score range.
+
+Defaults: **review 20, deny 50, correlation on**. Scores below 20 allow; 20 to below 50 review; 50-100 deny. Review 20 catches a medium concern in the four-group profile or two low concerns from different groups. Deny 50 means half the possible weighted concern budget is occupied. These are transparent operational policy choices, not empirically optimal thresholds. A single medium URL concern contributes 16.67 and can be below review; deployments needing stricter URL policy must lower the threshold or add a separately evaluated mandatory control.
 
 History includes the most recent 20 earlier evaluations in the same session, with original non-allowed decisions and different artifact types. The window is an implementation bound, not a statistical estimate. Shared-name context replaces generic context instead of adding both.
 
 ## Worked examples
 
 - Known publisher: **0, allow**.
-- Young integration / presentation-notes: provenance max(unknown 25, unsigned 25) = 25, capability 25. **50, review**. Age and downloads add nothing.
-- Linked trust signals: URL 75 provenance + max(non-HTTPS 50, private host 50) + capability 25 = 150, capped at **100, deny**. Skill provenance 25 + max(prior event 25, shared name 50) = **75, deny**. Correlation off: skill **25, allow**.
-- Over-privileged unknown source: missing 75 + sensitive capability 50 = 125, capped at **100, deny**.
+- Young integration / presentation-notes: provenance max(unknown 25, unsigned 25) = 25; capability 25. Weighted contributions **10 + 10 = 20, review**. Age and downloads add nothing.
+- Linked trust signals: URL severities 75 provenance + 50 transport + 25 capability = 150 out of capacity 300. Contributions **25 + 16.67 + 8.33 = 50, deny**. Skill severities 25 provenance + 50 context = 75 out of 250. Contributions **10 + 20 = 30, review**. Correlation off: skill **10, allow**.
+- Over-privileged unknown source / ops-mirror: severities 75 missing + 50 sensitive capability = 125 out of capacity 250. Contributions **30 + 20 = 50, deny**. The other groups contribute zero; unsigned is already covered by the stronger provenance cue. No clipping.
 
 ## Versioning and limits
 
-New records include `scoringVersion: severity-v2` and the policy used, covered by the original hash-linked receipt. Old records keep their scores and hashes and show "Earlier scoring model" in the inspector. The upgrade records an audit event and replaces only old factory thresholds 35/70 with 50/75; custom thresholds remain. Replay or submit fresh requests for the revised model.
+New records include `scoringVersion: weighted-v3`, the policy used, and the complete normalization breakdown, covered by the original hash-linked receipt. V1/v2 records retain their old scores and hashes and are labelled earlier models. Upgrade changes former factory thresholds 35/70 or 50/75 to 20/50 and records an audit event; custom settings remain. Replay or submit fresh requests for v3.
 
-Tests verify arithmetic, grouping, thresholds, duplicate handling, cutoff removal, correlation, versioning and migration. They are regression checks, not detection-rate or false-positive measurements. Evidence is caller-supplied. No artifact is fetched, installed or executed.
+Tests cover every combination of the current severity levels across all four profiles, including all-zero, maximum, duplicate and rounding cases. Displayed contributions equal the total and the score remains within 0-100 without clipping. They also verify thresholds, correlation, versioning and legacy migration. These are functional properties, not detection-rate measurements. Evidence remains caller-supplied; no artifact is fetched, installed or executed.
 
 ## Peer-reviewed references
 

@@ -124,9 +124,17 @@ test('upgrades legacy factory policy once while preserving original evaluations 
     const migrated = await createApp({ dataDir: directory, seed: false });
     assert.deepEqual(migrated.store.get(old.id), old);
     assert.equal(verifyEvaluations(migrated.store.appState().evaluations).valid, true);
-    assert.deepEqual(migrated.store.policy(), { reviewThreshold: 50, denyThreshold: 75, correlationEnabled: false });
+    assert.deepEqual(migrated.store.policy(), { reviewThreshold: 20, denyThreshold: 50, correlationEnabled: false });
     const reopened = await createApp({ dataDir: directory, seed: false });
     assert.equal(reopened.store.exportAudit().audit.filter((event) => event.type === 'scoring-model').length, 1);
+    const v2 = reopened.store.exportAudit();
+    v2.scoringVersion = 'severity-v2';
+    v2.policy = { reviewThreshold: 50, denyThreshold: 75, correlationEnabled: true };
+    await writeFile(join(directory, 'state.json'), JSON.stringify(v2));
+    const v3 = await createApp({ dataDir: directory, seed: false });
+    assert.deepEqual(v3.store.policy(), { reviewThreshold: 20, denyThreshold: 50, correlationEnabled: true });
+    assert.deepEqual(v3.store.get(old.id), old);
+    assert.equal(verifyEvaluations(v3.store.appState().evaluations).valid, true);
     const custom = reopened.store.exportAudit();
     delete custom.scoringVersion;
     custom.policy = { reviewThreshold: 20, denyThreshold: 60, correlationEnabled: true };

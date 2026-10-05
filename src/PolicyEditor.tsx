@@ -57,7 +57,7 @@ export function PolicyEditor({
           Requests receive a score from 0 to 100. These boundaries decide which
           requests proceed, pause, or stop.
         </p>
-        <p className="scoring-policy-note">Recommended: review at {RECOMMENDED_POLICY.reviewThreshold} (one medium concern), deny at {RECOMMENDED_POLICY.denyThreshold} (one high concern). These are policy boundaries, awaiting benchmark calibration.</p>
+        <p className="scoring-policy-note">Recommended: review at {RECOMMENDED_POLICY.reviewThreshold}, deny at {RECOMMENDED_POLICY.denyThreshold}. Scores are weighted shares of the full assessment budget. Thresholds are operational policy choices awaiting benchmark calibration.</p>
         <Boundary policy={policy} />
         <div className="threshold-field">
           <label htmlFor="review-threshold">

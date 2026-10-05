@@ -29,8 +29,8 @@ for (const [label, type] of [['Package', 'package'], ['Skill', 'skill'], ['MCP s
     const evaluation: Evaluation = await result.json();
     expect(evaluation.request.type).toBe(type);
     expect(evaluation.request.metadata).toMatchObject({ exists: true, signed: false, ageDays: 100, downloads: 1000, permissions: ['read:workspace'] });
-    expect(evaluation.score).toBe(25);
-    expect(evaluation.scoringVersion).toBe('severity-v2');
+    expect(evaluation.score).toBe(type === 'url' ? 8.33 : 10);
+    expect(evaluation.scoringVersion).toBe('weighted-v3');
     await expect(page.getByRole('dialog', { name: 'Evaluation details' })).toBeVisible();
     await expect(dialog).toContainText(evaluation.receipt.hash);
     await dialog.getByText('Supplied metadata & content', { exact: true }).click();
@@ -63,7 +63,7 @@ for (const decision of ['allow', 'deny'] as const) {
   });
 }
 
-test('presentation example shows 50 points, grouped supporting evidence and the IEEE reference', async ({ page }, testInfo) => {
+test('presentation example shows 20 weighted points, exact arithmetic and the IEEE reference', async ({ page }, testInfo) => {
   await page.getByRole('button', { name: /New evaluation/ }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('button', { name: 'MCP server', exact: true }).click();
@@ -79,9 +79,12 @@ test('presentation example shows 50 points, grouped supporting evidence and the 
   const response = page.waitForResponse((r) => r.url().endsWith('/api/evaluate') && r.request().method() === 'POST');
   await dialog.getByRole('button', { name: 'Evaluate request' }).click();
   const result: Evaluation = await (await response).json();
-  expect([result.score, result.decision, result.scoringVersion]).toEqual([50, 'review', 'severity-v2']);
+  expect([result.score, result.decision, result.scoringVersion]).toEqual([20, 'review', 'weighted-v3']);
   await expect(dialog).toContainText('Age and downloads are context only');
-  await expect(dialog).toContainText('25 base points, already covered');
+  await expect(dialog).toContainText('Severity 25, already covered');
+  await expect(dialog.getByLabel('Score calculation')).toContainText('75 + 50 + 75 + 50 = 250');
+  await expect(dialog.locator('.scoring-calculation-total')).toContainText('50/250 × 100');
+  await expect(dialog.locator('.scoring-calculation-total strong')).toHaveText('20/100');
   await expect(dialog.getByRole('link', { name: /Zahan et al., IEEE/ })).toHaveAttribute('href', 'https://arxiv.org/html/2208.03412v3#S2');
   await dialog.getByText('Research & rationale', { exact: true }).first().click();
   await expect(dialog.locator('.signal-sources').first()).toContainText('sources support the risk concern');
@@ -91,7 +94,7 @@ test('presentation example shows 50 points, grouped supporting evidence and the 
   await page.screenshot({ path: testInfo.outputPath('scoring-mobile.png'), fullPage: true });
 });
 
-test('correlation moves the linked skill from 25/allow to 75/deny with exact published-scale arithmetic', async ({ page }) => {
+test('correlation moves the linked skill from 10/allow to 30/review with normalized arithmetic', async ({ page }) => {
   const replay = async () => {
     await page.getByRole('button', { name: 'Replay workflow', exact: true }).click();
     const response = page.waitForResponse((r) => r.url().endsWith('/api/scenarios/correlated-chain/run'));
@@ -99,14 +102,14 @@ test('correlation moves the linked skill from 25/allow to 75/deny with exact pub
     return await (await response).json() as Evaluation[];
   };
   const linked = await replay();
-  expect(linked.map((e) => [e.score, e.decision])).toEqual([[100, 'deny'], [75, 'deny']]);
+  expect(linked.map((e) => [e.score, e.decision])).toEqual([[50, 'deny'], [30, 'review']]);
   await page.getByRole('button', { name: 'Policy', exact: true }).click();
   await page.getByRole('switch').click();
   await page.getByRole('button', { name: 'Save policy' }).click();
   await expect(page.getByRole('status')).toContainText('Policy updated');
   await page.getByRole('button', { name: 'Overview', exact: true }).click();
   const isolated = await replay();
-  expect(isolated[1].score).toBe(25);
+  expect(isolated[1].score).toBe(10);
   expect(isolated[1].decision).toBe('allow');
 });
 
@@ -118,7 +121,7 @@ test('policy validates edits, saves with Enter, previews, discards, and persists
   await expect(page.getByRole('alert')).toContainText('Review must be lower');
   await expect(page.getByRole('button', { name: 'Save policy' })).toBeDisabled();
   await page.getByRole('button', { name: 'Discard changes' }).click();
-  await expect(review).toHaveValue('50');
+  await expect(review).toHaveValue('20');
   await review.fill('0');
   await deny.fill('80');
   await page.getByRole('switch').click();
@@ -181,9 +184,24 @@ test('session dropdown and decision dropdown show the selected records', async (
   await expect(page.getByRole('heading', { name: 'All requests' })).toBeVisible();
   await expect(page.locator('tbody tr')).toHaveCount(7);
   await page.getByRole('combobox', { name: 'Filter by decision' }).selectOption('deny');
-  await expect(page.locator('tbody tr')).toHaveCount(2);
-  await page.getByRole('combobox', { name: 'Filter by decision' }).selectOption('review');
   await expect(page.locator('tbody tr')).toHaveCount(1);
+  await page.getByRole('combobox', { name: 'Filter by decision' }).selectOption('review');
+  await expect(page.locator('tbody tr')).toHaveCount(2);
+});
+
+test('ops-mirror displays weighted 30 plus 20 as 50 with a full 100-point budget', async ({ page }, testInfo) => {
+  await page.getByRole('button', { name: 'Replay workflow', exact: true }).click();
+  await page.getByRole('button', { name: /Over-privileged unknown source/ }).click();
+  await page.locator('tbody').getByRole('button', { name: 'Inspect ops-mirror', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.locator('.scoring-calculation-total strong')).toHaveText('50/100');
+  await expect(dialog.locator('.scoring-calculation-total')).toContainText('125/250 × 100');
+  await expect(dialog.locator('.signal > div > strong')).toHaveText(['+30', '+20', '+0']);
+  await expect(dialog.getByLabel('Score calculation')).toContainText('Weights sum to 100%');
+  await page.screenshot({ path: testInfo.outputPath('weighted-ops-desktop.png'), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('weighted-ops-mobile.png'), fullPage: true });
 });
 
 test('search, type filters, pagination and keyboard shortcuts work together', async ({ page }) => {
