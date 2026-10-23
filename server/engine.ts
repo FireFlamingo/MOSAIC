@@ -1,4 +1,5 @@
 import type { ArtifactRequest, Decision, Evaluation, Policy, Signal, ScoringBreakdown } from '../shared/types';
+import { normalizeName, packageBaseName } from '../shared/names';
 import { EVIDENCE_GROUPS, RECOMMENDED_POLICY, SCORING_VERSION, SEVERITY_WEIGHTS, SIGNAL_RULES, scoringProfile, type EvidenceGroup, type SignalId } from '../shared/scoring';
 
 /** Conservative defaults for the local, deterministic MVP evaluator. */
@@ -57,14 +58,6 @@ export function scoreSignals(type: ArtifactRequest['type'], signals: Signal[]): 
     signals: weightedSignals,
     scoringBreakdown: { normalizationTotal, rawTotal, groups: groups.map(({ group, capacity, rawSeverity, weight, cents }) => ({ group, capacity, rawSeverity, weight, contribution: cents / 100 })) },
   };
-}
-
-function normalizeName(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-function packageBaseName(name: string): string {
-  return name.replace(/@v?\d+(?:\.\d+){0,2}(?:[-+][a-z0-9.-]+)?$/i, '');
 }
 
 function levenshtein(left: string, right: string): number {
@@ -152,7 +145,7 @@ export function evaluateRisk(
         signals.push(signal('url-local-host', 'URL names a local or private network host. This can cross a network trust boundary; approved internal services can also be legitimate.'));
       }
     } catch {
-      signals.push(signal('url-invalid', 'URL could not be parsed locally, so its destination cannot be assessed. Holding it for review is a MOSAIC input-validation policy.'));
+      signals.push(signal('url-invalid', 'URL could not be parsed locally, so its destination cannot be assessed. Holding it for review is a CARD input-validation policy.'));
     }
   }
 
@@ -160,13 +153,15 @@ export function evaluateRisk(
     const recent = history
       .filter((evaluation) => evaluation.request.sessionId === request.sessionId)
       .slice(-20)
+      // A human verdict replaces the automated outcome: an earlier request a reviewer called safe
+      // stops raising suspicion, and one reported unsafe starts raising it.
       .filter((evaluation) =>
         evaluation.request.type !== request.type
-        && evaluation.decision !== 'allow',
+        && (evaluation.review?.decision ?? evaluation.decision) !== 'allow',
       );
     if (recent.length) signals.push(signal('session-correlation', `${recent.length} prior non-allowed artifact(s) of a different type occurred in this session. History is one contextual cue; counts are not multiplied into attack probabilities.`));
     const nameMatch = recent.some((evaluation) => normalizeName(evaluation.request.name) === normalizeName(request.name));
-    if (nameMatch) signals.push(signal('name-correlation', 'A prior non-allowed artifact of another type used the same normalized name. The stronger contextual cue replaces the generic history contribution; its severity is a MOSAIC research hypothesis.'));
+    if (nameMatch) signals.push(signal('name-correlation', 'A prior non-allowed artifact of another type used the same normalized name. The stronger contextual cue replaces the generic history contribution; its severity is a CARD research hypothesis.'));
   }
 
   const result = scoreSignals(request.type, signals);

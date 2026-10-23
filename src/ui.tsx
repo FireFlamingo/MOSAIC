@@ -34,7 +34,8 @@ export const decisionLabel = {
 };
 export const decisionIcon = { allow: Check, review: Pause, deny: X };
 export const INITIAL_POLICY: Policy = { ...RECOMMENDED_POLICY };
-export const resolved = (e: Evaluation) => e.review?.decision ?? e.decision;
+/** A verdict resolves a hold. On an allowed or denied request it is feedback and does not rewrite what happened. */
+export const resolved = (e: Evaluation) => (e.decision === "review" && e.review ? e.review.decision : e.decision);
 export const latest = (list: Evaluation[]) =>
   [...list].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 export const time = (stamp: string) =>

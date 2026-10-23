@@ -1,8 +1,8 @@
-# MOSAIC: MVP capabilities and final-project plan
+# CARD: MVP capabilities and final-project plan
 
 ## 1. What works now
 
-Updated for scoring model weighted-v3 and the 6 October 2026 presentation. MOSAIC evaluates resources an AI coding agent proposes to use and records a score, explanation and Allow, Needs review or Deny.
+Updated for scoring model weighted-v3 and the 6 October 2026 presentation. CARD evaluates resources an AI coding agent proposes to use and records a score, explanation and Allow, Needs review or Deny.
 
 **Four artifact types:** software packages, agent skills/instructions, MCP tool servers and remote URLs. They share one request format and one review workflow.
 
@@ -26,7 +26,7 @@ Updated for scoring model weighted-v3 and the 6 October 2026 presentation. MOSAI
 
 # 2. How to run and demonstrate it
 
-Install Node.js 22 or newer. In the MOSAIC folder, run the following once. Initial dependency installation needs internet.
+Install Node.js 22 or newer. In the CARD folder, run the following once. Initial dependency installation needs internet.
 
 ```text
 npm ci
@@ -49,12 +49,12 @@ Open http://127.0.0.1:4318/. Keep the terminal running. After setup, npm start i
 **Audit verification:** download the JSON export and run the following with its actual location.
 
 ```text
-npm run verify:audit -- "C:/path/to/mosaic-audit.json"
+npm run verify:audit -- "C:/path/to/card-audit.json"
 ```
 
 ### Research explanation
 
-The numeric scale is described in a peer-reviewed IEEE publication, but the complete MOSAIC model is an adaptation. Security conference research motivates hallucination, typosquatting, content and indirect-injection checks. No claim of measured detection accuracy is made. Read MOSAIC-Scoring-Rationale.pdf for each category's reasoning and complete references.
+The numeric scale is described in a peer-reviewed IEEE publication, but the complete CARD model is an adaptation. Security conference research motivates hallucination, typosquatting, content and indirect-injection checks. No claim of measured detection accuracy is made. Read CARD-Scoring-Rationale.pdf for each category's reasoning and complete references.
 
 **Main reference:** N. Zahan et al., "OpenSSF Scorecard: On the Path Toward Ecosystem-Wide Automated Security Metrics," IEEE Security & Privacy, 21(6), 76-88, 2023. DOI: 10.1109/MSEC.2023.3279773. Accessible manuscript: https://arxiv.org/html/2208.03412v3#S2.
 

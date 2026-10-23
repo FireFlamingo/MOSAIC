@@ -1,4 +1,4 @@
-# MOSAIC: weighted scoring and presentation defence
+# CARD: weighted scoring and presentation defence
 
 ## 1. Published basis and what changed
 
@@ -12,7 +12,7 @@ Open manuscript: https://arxiv.org/html/2208.03412v3#S2. Publisher record: https
 
 ### Severity is different from a contribution
 
-MOSAIC expresses the published ratios as raw severity ratings **25, 50, 75 and 100**. The unit conversion preserves 1:2:3:4. A raw rating is then weighted against the entire declared assessment capacity. It is not added directly to the final score.
+CARD expresses the published ratios as raw severity ratings **25, 50, 75 and 100**. The unit conversion preserves 1:2:3:4. A raw rating is then weighted against the entire declared assessment capacity. It is not added directly to the final score.
 
 In v3, the previous clipped sum is replaced by a **normalized weighted average**. The applicable weights total one (100%). Each group uses a rating between zero and one. Therefore the final score stays within 0-100 naturally, without discarding excess points.
 
@@ -20,9 +20,9 @@ In v3, the previous clipped sum is replaced by a **normalized weighted average**
 
 ### What is sourced and what is adapted
 
-The IEEE research supplies the severity ratios and weighted-average mathematical form. MOSAIC defines its own evidence groups and their ranges using the highest supported detector severity. The signal classifications, grouping and policy thresholds are our documented adaptations.
+The IEEE research supplies the severity ratios and weighted-average mathematical form. CARD defines its own evidence groups and their ranges using the highest supported detector severity. The signal classifications, grouping and policy thresholds are our documented adaptations.
 
-The paper does not train an agent-request classifier, provide measured attack probabilities for our signals or validate MOSAIC. This is a reproducible, literature-based index awaiting expert review and benchmark calibration. Scorecard's own check score measures security practice, with higher being better; MOSAIC measures matched concerns, with higher being worse.
+The paper does not train an agent-request classifier, provide measured attack probabilities for our signals or validate CARD. This is a reproducible, literature-based index awaiting expert review and benchmark calibration. Scorecard's own check score measures security practice, with higher being better; CARD measures matched concerns, with higher being worse.
 
 <!-- page -->
 
@@ -32,7 +32,7 @@ The paper does not train an agent-request classifier, provide measured attack pr
 
 ### Identity and provenance
 
-**Reported missing: High, 75.** The artifact cannot be used as identified if unavailable. Spracklen et al., USENIX Security 2025 [2], documents the hallucinated-package attack surface. MOSAIC receives a caller report rather than verifying a registry. High expresses concern strength, not a 75% attack probability.
+**Reported missing: High, 75.** The artifact cannot be used as identified if unavailable. Spracklen et al., USENIX Security 2025 [2], documents the hallucinated-package attack surface. CARD receives a caller report rather than verifying a registry. High expresses concern strength, not a 75% attack probability.
 
 **Unknown existence: Low, 25.** Absent evidence is weaker than a report of nonexistence. Treating both the same would erase this distinction.
 
@@ -150,4 +150,4 @@ Over-privileged unknown source: missing 75 plus sensitive capability 50, out of 
 
 "We use a severity scale and weighted-average method described in peer-reviewed IEEE research. Our applicable group ranges produce weights totaling 100%. A raw severity of 75 is not 75 additive points: its weighted share here is 30. The displayed contributions add exactly to the total. We document our adaptations and will validate detection accuracy using labelled workflows."
 
-Method and sources checked 6 October 2026. Complete rules: docs/SCORING.md. Implementation: shared/scoring.ts and server/engine.ts. A citation supports the stated method or concern; it is not an endorsement of MOSAIC.
+Method and sources checked 6 October 2026. Complete rules: docs/SCORING.md. Implementation: shared/scoring.ts and server/engine.ts. A citation supports the stated method or concern; it is not an endorsement of CARD.

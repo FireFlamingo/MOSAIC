@@ -3,6 +3,7 @@ import { signalContribution } from "../shared/scoring";
 import {
   Activity,
   ArrowDownToLine,
+  BadgeCheck,
   ArrowRight,
   ArrowUpRight,
   CheckCheck,
@@ -51,11 +52,13 @@ import {
 } from "./ui";
 import { EvaluationDialog } from "./EvaluationDialog";
 import { PolicyEditor } from "./PolicyEditor";
-type View = "Overview" | "Requests" | "Review queue" | "Policy";
+import { FeedbackView, type ReviewSubmission } from "./Feedback";
+type View = "Overview" | "Requests" | "Review queue" | "Trust & feedback" | "Policy";
 const views = [
   { label: "Overview" as View, icon: Layers3 },
   { label: "Requests" as View, icon: Activity },
   { label: "Review queue" as View, icon: ShieldCheck },
+  { label: "Trust & feedback" as View, icon: BadgeCheck },
   { label: "Policy" as View, icon: SlidersHorizontal },
 ];
 
@@ -64,6 +67,7 @@ export default function App() {
     evaluations: [],
     policy: INITIAL_POLICY,
     scenarios: [],
+    rules: [],
   });
   const [view, setView] = useState<View>("Overview");
   const [loading, setLoading] = useState(true),
@@ -222,21 +226,26 @@ export default function App() {
       );
     }
   }
-  async function review(next: "allow" | "deny", note: string) {
+  async function review(input: ReviewSubmission) {
     if (!selected) return;
     const updated = await api<Evaluation>(`/api/reviews/${selected.id}`, {
       method: "POST",
-      body: JSON.stringify({ decision: next, note }),
+      body: JSON.stringify(input),
     });
     if (updated) {
-      setState((current) => ({
-        ...current,
-        evaluations: current.evaluations.map((item) =>
-          item.id === updated.id ? updated : item,
-        ),
-      }));
       setSelected(updated);
-      setNotice("Review saved to the audit trail.");
+      setNotice(input.remember ? "Verdict saved and remembered for later requests." : "Verdict saved to the audit trail.");
+      await load();
+    }
+  }
+  async function revokeRule(id: string, note: string) {
+    const revoked = await api<unknown>(`/api/rules/${id}/revoke`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    });
+    if (revoked) {
+      setNotice("Rule revoked. Later requests are scored normally.");
+      await load();
     }
   }
   async function savePolicy(policy: Policy) {
@@ -259,7 +268,7 @@ export default function App() {
       );
       const link = document.createElement("a");
       link.href = url;
-      link.download = "mosaic-audit.json";
+      link.download = "card-audit.json";
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       setNotice("Audit export prepared.");
@@ -322,7 +331,9 @@ export default function App() {
         ? "Every evaluated artifact, with the evidence behind its decision."
         : view === "Review queue"
           ? "Resolve held requests with a recorded human decision."
-          : "Set the boundaries for your next evaluation.";
+          : view === "Trust & feedback"
+            ? "See where human verdicts disagreed with CARD, and manage remembered decisions."
+            : "Set the boundaries for your next evaluation.";
   return (
     <div className="shell">
       {mobile && (
@@ -350,7 +361,7 @@ export default function App() {
             ))}
           </span>
           <span>
-            MOSAIC<small>ARTIFACT CONTROL</small>
+            CARD<small>CROSS-ARTIFACT RUNTIME DEFENSE</small>
           </span>
         </a>
         <div className="workspace">
@@ -448,7 +459,7 @@ export default function App() {
             <div>
               <div className="overline">
                 <span className="orange-square" />
-                MOSAIC / CONTROL PLANE
+                CARD / CONTROL PLANE
               </div>
               <h1>{view === "Overview" ? "Artifact overview" : view}</h1>
               <p>{subtitle}</p>
@@ -525,7 +536,7 @@ export default function App() {
               </button>
             </div>
           )}
-          {view !== "Policy" && (
+          {view !== "Policy" && view !== "Trust & feedback" && (
             <>
               <section className="metric-band" aria-label="Evaluation totals">
                 <button
@@ -923,6 +934,11 @@ export default function App() {
                               </td>
                               <td>
                                 <Badge decision={resolved(e)} />
+                                {e.memory?.applied && (
+                                  <span className={`memory-tag ${e.memory.applied.effect}`} title={e.memory.applied.effect === "trust" ? "Decided by a trust rule" : "Decided by a block rule"}>
+                                    {e.memory.applied.effect === "trust" ? "Trusted" : "Blocked"}
+                                  </span>
+                                )}
                                 {e.review && (
                                   <span
                                     className="review-indicator"
@@ -1081,6 +1097,15 @@ export default function App() {
               </div>
             </>
           )}
+          {view === "Trust & feedback" && (
+            <FeedbackView
+              evaluations={state.evaluations}
+              rules={state.rules}
+              policy={state.policy}
+              blocked={blocked}
+              onRevoke={revokeRule}
+            />
+          )}
           {view === "Policy" && (
             <PolicyEditor
               saved={state.policy}
@@ -1124,6 +1149,7 @@ export default function App() {
           onClose={closeDialog}
           onReview={review}
           onSubmit={submit}
+          rules={state.rules}
         />
       )}
     </div>

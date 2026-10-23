@@ -6,6 +6,7 @@ import "@fontsource-variable/public-sans";
 import "./styles.css";
 import "./typography.css";
 import "./scoring.css";
+import "./feedback.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

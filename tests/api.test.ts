@@ -10,7 +10,7 @@ import type { ArtifactRequest } from '../shared/types.js';
 import { verifyEvaluations } from '../scripts/verify-audit.js';
 
 async function withServer(fn: (base: string) => Promise<void>) {
-  const directory = await mkdtemp(join(tmpdir(), 'mosaic-api-'));
+  const directory = await mkdtemp(join(tmpdir(), 'card-api-'));
   const { app } = await createApp({ dataDir: directory, seed: false });
   const server = app.listen(0, '127.0.0.1');
   await new Promise<void>((resolve) => server.once('listening', resolve));
@@ -59,13 +59,13 @@ test('serializes concurrent evaluations into one receipt chain', async () => wit
 }));
 
 test('persists policy, reviews, and verifiable receipts across a fresh app instance', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'mosaic-reopen-'));
+  const directory = await mkdtemp(join(tmpdir(), 'card-reopen-'));
   try {
     const first = await createApp({ dataDir: directory, seed: false });
     const created = await first.store.evaluate(artifact, evaluateRisk);
     assert.equal(created.decision, 'review');
-    const reviewed = await first.store.review(created.id, { decision: 'allow', note: 'Persist this synthetic decision', timestamp: '2026-01-01T00:00:00.000Z' });
-    assert.ok(reviewed);
+    const reviewed = await first.store.review(created.id, { decision: 'allow', note: 'Persist this synthetic decision', reason: 'other-safe', reviewer: 'Test reviewer', remember: false }, new Date('2026-01-01T00:00:00.000Z'));
+    assert.ok(reviewed.ok);
     await first.store.setPolicy({ reviewThreshold: 25, denyThreshold: 65, correlationEnabled: false });
     const second = await createApp({ dataDir: directory, seed: false });
     const restored = second.store.appState().evaluations[0];
@@ -85,8 +85,10 @@ test('enforces policy, review, origin, and request-body boundaries', async () =>
   const safe = await fetch(`${base}/api/evaluate`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'url', name: 'docs', sessionId: 'safe', source: 'https://docs.example.invalid', metadata: { exists: true, signed: true, permissions: [] } }) });
   const safeEvaluation = await safe.json() as { id: string; decision: string };
   assert.equal(safeEvaluation.decision, 'allow');
-  const nonReview = await fetch(`${base}/api/reviews/${safeEvaluation.id}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ decision: 'allow', note: 'Cannot review this' }) });
-  assert.equal(nonReview.status, 409);
+  // An allowed request can be labelled; the label is feedback and does not rewrite the decision.
+  const label = await fetch(`${base}/api/reviews/${safeEvaluation.id}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ decision: 'deny', note: 'Reported unsafe after the fact', reason: 'malicious' }) });
+  assert.equal(label.status, 200);
+  assert.equal((await label.json() as { decision: string }).decision, 'allow');
   const pending = await fetch(`${base}/api/evaluate`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(artifact) });
   const pendingEvaluation = await pending.json() as { id: string };
   const firstReview = await fetch(`${base}/api/reviews/${pendingEvaluation.id}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ decision: 'deny', note: 'Synthetic denial' }) });
@@ -113,7 +115,7 @@ test('runs scenarios in isolated sessions with live review and correlation signa
 }));
 
 test('upgrades legacy factory policy once while preserving original evaluations and custom policy', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'mosaic-upgrade-'));
+  const directory = await mkdtemp(join(tmpdir(), 'card-upgrade-'));
   try {
     const first = await createApp({ dataDir: directory, seed: false });
     const old = await first.store.append({ request: artifact, score: 48, decision: 'review', signals: [], durationMs: 1 });

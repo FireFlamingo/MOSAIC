@@ -1,5 +1,5 @@
 {
-  "name": "mosaic-agent-firewall",
+  "name": "card-runtime-defense",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,6 +10,7 @@
     "test": "tsx --test tests/*.test.ts",
     "test:browser": "npm run build && playwright test",
     "verify:audit": "tsx scripts/verify-audit.ts",
+    "bench": "tsx scripts/benchmark.ts",
     "check": "npm run test && npm run build"
   },
   "dependencies": {

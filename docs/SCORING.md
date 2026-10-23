@@ -1,10 +1,10 @@
-# MOSAIC scoring: weighted-v3
+# CARD scoring: weighted-v3
 
 The numerical severity scale is sourced from **Zahan et al., "OpenSSF Scorecard: On the Path Toward Ecosystem-Wide Automated Security Metrics," IEEE Security & Privacy 21(6), 76-88, 2023**, DOI [10.1109/MSEC.2023.3279773](https://doi.org/10.1109/MSEC.2023.3279773). The [author manuscript, Section II](https://arxiv.org/html/2208.03412v3#S2) explicitly reports Low = 2.5, Medium = 5, High = 7.5, Critical = 10.
 
-MOSAIC uses **raw severity ratings** of 25 / 50 / 75 / 100, preserving the published 2.5 / 5 / 7.5 / 10 ratios. These ratings are not additive contributions. A fixed normalized weighted average converts each group's rating into its share of the full 100-point assessment budget. The total is naturally bounded; there is no clipping operation.
+CARD uses **raw severity ratings** of 25 / 50 / 75 / 100, preserving the published 2.5 / 5 / 7.5 / 10 ratios. These ratings are not additive contributions. A fixed normalized weighted average converts each group's rating into its share of the full 100-point assessment budget. The total is naturally bounded; there is no clipping operation.
 
-**Citation scope:** the paper supplies severity weights and describes weighted-average aggregation for repository security practices. MOSAIC uses that mathematical form with its own groups and declared ranges. It does not implement the full Scorecard checks or claim that their authors validated agent-request coefficients. Signal classifications, group definitions, range selection and decision thresholds are **MOSAIC adaptations**, awaiting expert review and benchmark calibration.
+**Citation scope:** the paper supplies severity weights and describes weighted-average aggregation for repository security practices. CARD uses that mathematical form with its own groups and declared ranges. It does not implement the full Scorecard checks or claim that their authors validated agent-request coefficients. Signal classifications, group definitions, range selection and decision thresholds are **CARD adaptations**, awaiting expert review and benchmark calibration.
 
 ## Classification rubric
 
@@ -18,9 +18,9 @@ MOSAIC uses **raw severity ratings** of 25 / 50 / 75 / 100, preserving the publi
 | Signal | Raw severity | Group | Rationale and source |
 | --- | ---: | --- | --- |
 | Artifact reported missing | 75 | Identity & provenance | Request cannot be fulfilled as identified. Spracklen et al., USENIX Security 2025, documents package hallucination and its attack surface. Only a caller report is used here; no registry check. |
-| Existence unverified | 25 | Identity & provenance | Missing evidence is weaker than reported nonexistence. This distinction is a MOSAIC policy judgement motivated by the same research. |
+| Existence unverified | 25 | Identity & provenance | Missing evidence is weaker than reported nonexistence. This distinction is a CARD policy judgement motivated by the same research. |
 | Known-package lookalike | 50 | Identity & provenance | Ohm et al., DIMVA 2020, documents typosquatting. Similar names can be legitimate, so similarity merits review rather than a malware claim. Catalog and edit-distance boundary are prototype choices. |
-| Reported unsigned | 25 | Identity & provenance | Zahan et al. discusses signed provenance. Its Signed-Releases check is High; MOSAIC uses Low because an unverified boolean is weaker than examining actual releases. This is an explicit adaptation. |
+| Reported unsigned | 25 | Identity & provenance | Zahan et al. discusses signed provenance. Its Signed-Releases check is High; CARD uses Low because an unverified boolean is weaker than examining actual releases. This is an explicit adaptation. |
 | General elevated capability | 25 | Requested capabilities | Network/filesystem/clipboard/browser access creates potential exposure but is often needed legitimately. OWASP AI Agent Security motivates least privilege. IEEE Token-Permissions is related but repository-specific. |
 | Sensitive capability | 50 | Requested capabilities | Shell, process spawning or secrets access increases execution/confidentiality impact. OWASP least privilege supports review. Duplicates and permission counts do not multiply points. |
 | Obfuscation marker | 25 | Static content | Ohm et al. and Sejfia & Schäfer, ICSE 2022, motivate suspicious-code inspection. Encoding also occurs in benign code, making a bare marker weak evidence. |
@@ -29,9 +29,9 @@ MOSAIC uses **raw severity ratings** of 25 / 50 / 75 / 100, preserving the publi
 | Instruction override in skill/MCP text | 75 | Static content | Abdelnabi et al., ACM AISec 2023, demonstrates indirect prompt injection. An override in an instruction-bearing artifact gets conservative High priority; a text match is not a successful-attack measurement. |
 | Non-HTTPS URL | 50 | URL & transport | MITRE CWE-319 motivates cleartext-transmission concerns. This does not establish that sensitive data is actually transmitted. |
 | Local/private URL host | 50 | URL & transport | OWASP SSRF Prevention motivates network-boundary checks. Approved internal services can be legitimate. Literal parsing only; no DNS/HTTP request. |
-| Invalid URL | 50 | URL & transport | Destination cannot be classified. Review is a MOSAIC fail-safe input policy, not a learned coefficient. |
+| Invalid URL | 50 | URL & transport | Destination cannot be classified. Review is a CARD fail-safe input policy, not a learned coefficient. |
 | Prior non-allowed cross-type request | 25 | Session context | Indirect-injection research and OWASP behavior monitoring motivate history inspection. Generic earlier activity is a weak cue. |
-| Shared name across those requests | 50 | Session context | A shared identifier is a stronger link than timing alone. This uplift is MOSAIC's research hypothesis, not an improvement measured by the cited papers. |
+| Shared name across those requests | 50 | Session context | A shared identifier is a stronger link than timing alone. This uplift is CARD's research hypothesis, not an improvement measured by the cited papers. |
 
 Age and download count are visible context with **zero points**. No transferable evidence was found for universal 7-day or 50-download cutoffs in the reviewed papers. These features could still be useful in a trained, ecosystem-specific model.
 
@@ -90,4 +90,4 @@ Tests cover every combination of the current severity levels across all four pro
 4. Sejfia, A., Schäfer, M. "Practical Automated Detection of Malicious npm Packages." **44th ACM/IEEE ICSE**, 2022, pp. 1681-1692. DOI: [10.1145/3510003.3510104](https://doi.org/10.1145/3510003.3510104). [Manuscript](https://arxiv.org/abs/2202.13953).
 5. Abdelnabi, S. et al. "Not What You've Signed Up For: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection." **16th ACM AISec**, 2023, pp. 79-90. DOI: [10.1145/3605764.3623985](https://doi.org/10.1145/3605764.3623985). [Manuscript](https://arxiv.org/abs/2302.12173).
 
-Additional guidance (not conference papers): [OWASP AI Agent Security](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html), [OWASP SSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html), [MITRE CWE-319](https://cwe.mitre.org/data/definitions/319.html), [NIST SP 800-30r1](https://doi.org/10.6028/NIST.SP.800-30r1). Inspected 5 October 2026. None endorses MOSAIC's accuracy or thresholds.
+Additional guidance (not conference papers): [OWASP AI Agent Security](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html), [OWASP SSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html), [MITRE CWE-319](https://cwe.mitre.org/data/definitions/319.html), [NIST SP 800-30r1](https://doi.org/10.6028/NIST.SP.800-30r1). Inspected 5 October 2026. None endorses CARD's accuracy or thresholds.

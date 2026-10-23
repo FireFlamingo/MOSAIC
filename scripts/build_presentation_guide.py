@@ -68,13 +68,13 @@ def build_guide(source_path, output_path, label):
 
     doc = SimpleDocTemplate(str(output_path), pagesize=A4, rightMargin=48, leftMargin=48,
                             topMargin=42, bottomMargin=46, title=label,
-                            author="MOSAIC project", subject="Normalized weighted scoring v3 and presentation documentation")
+                            author="CARD project", subject="Normalized weighted scoring v3 and presentation documentation")
     doc.build(story, onFirstPage=footer, onLaterPages=footer)
     print(output_path)
 
 
 if __name__ == "__main__":
     if "--scoring" in sys.argv:
-        build_guide(ROOT / "docs" / "SCORING-RATIONALE.md", ROOT / "output" / "pdf" / "MOSAIC-Scoring-Rationale.pdf", "MOSAIC - Scoring rationale")
+        build_guide(ROOT / "docs" / "SCORING-RATIONALE.md", ROOT / "output" / "pdf" / "CARD-Scoring-Rationale.pdf", "CARD - Scoring rationale")
     else:
-        build_guide(ROOT / "docs" / "PRESENTATION.md", ROOT / "output" / "pdf" / "MOSAIC-Presentation-Guide.pdf", "MOSAIC - Presentation guide")
+        build_guide(ROOT / "docs" / "PRESENTATION.md", ROOT / "output" / "pdf" / "CARD-Presentation-Guide.pdf", "CARD - Presentation guide")

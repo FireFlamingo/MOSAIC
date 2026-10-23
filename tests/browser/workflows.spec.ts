@@ -47,9 +47,12 @@ for (const decision of ['allow', 'deny'] as const) {
     await page.getByRole('button', { name: /Review queue/ }).click();
     await page.locator('tbody').getByRole('button', { name: 'Inspect mail-triage-lab', exact: true }).click();
     const dialog = page.getByRole('dialog');
+    await dialog.getByRole('radio', { name: decision === 'allow' ? /Allow · it is safe/ : /Deny · it is unsafe/ }).check();
     const resolve = dialog.getByRole('button', { name: decision === 'allow' ? 'Allow request' : 'Deny request' });
     await expect(resolve).toBeDisabled();
+    await dialog.getByLabel('Reason').selectOption(decision === 'allow' ? 'expected-tool' : 'malicious');
     await dialog.getByRole('textbox', { name: 'Reviewer note' }).fill(`Browser verification: ${decision}`);
+    await dialog.getByLabel('Your name').fill('Browser reviewer');
     await resolve.click();
     await expect(dialog.getByText(`Human review · ${decision === 'allow' ? 'Allowed' : 'Denied'}`)).toBeVisible();
     await page.keyboard.press('Escape');
@@ -62,6 +65,30 @@ for (const decision of ['allow', 'deny'] as const) {
     await expect(page.getByRole('dialog')).toContainText(`Browser verification: ${decision}`);
   });
 }
+
+test('a remembered trust appears in Trust & feedback and can be revoked', async ({ page }) => {
+  await page.getByRole('button', { name: /Review queue/ }).click();
+  await page.locator('tbody').getByRole('button', { name: 'Inspect mail-triage-lab', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('radio', { name: /Allow · it is safe/ }).check();
+  await dialog.getByLabel('Reason').selectOption('expected-tool');
+  await dialog.getByRole('checkbox', { name: 'Trust this exact version for later requests' }).check();
+  await dialog.getByRole('textbox', { name: 'Reviewer note' }).fill('Internal mail tool');
+  await dialog.getByLabel('Your name').fill('Browser reviewer');
+  await dialog.getByRole('button', { name: 'Allow request' }).click();
+  await expect(dialog).toContainText('Trusted this exact version until');
+  await expect(dialog).toContainText('False alarm (false positive)');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Trust & feedback', exact: true }).click();
+  const rules = page.locator('.feedback-rules');
+  await expect(rules).toContainText('mail-triage-lab');
+  await expect(rules).toContainText('Active');
+  await rules.getByRole('button', { name: 'Revoke' }).click();
+  await rules.getByLabel('Reason for revoking').fill('Browser verification');
+  await rules.getByRole('button', { name: 'Confirm revoke' }).click();
+  await expect(rules).toContainText('Revoked');
+  await expect(page.locator('.feedback-accuracy')).toContainText('1 of');
+});
 
 test('presentation example shows 20 weighted points, exact arithmetic and the IEEE reference', async ({ page }, testInfo) => {
   await page.getByRole('button', { name: /New evaluation/ }).click();
@@ -176,9 +203,9 @@ test('all replay choices create the advertised decisions', async ({ page }) => {
 
 test('session dropdown and decision dropdown show the selected records', async ({ page, request, baseURL }) => {
   const state: AppState = await (await request.get(`${baseURL}/api/state`)).json();
-  const target = state.evaluations.find(e => e.request.name === '@mosaic/ledger')!;
+  const target = state.evaluations.find(e => e.request.name === '@card/ledger')!;
   await page.getByRole('combobox', { name: 'Choose session' }).selectOption(target.request.sessionId);
-  await expect(page.locator('.session-canvas')).toContainText('@mosaic/ledger');
+  await expect(page.locator('.session-canvas')).toContainText('@card/ledger');
   await page.getByRole('button', { name: /Review queue/ }).click();
   await page.getByRole('combobox', { name: 'Filter by decision' }).selectOption('allow');
   await expect(page.getByRole('heading', { name: 'All requests' })).toBeVisible();
@@ -230,7 +257,7 @@ test('audit download contains evaluations and receipts', async ({ page }) => {
   const downloading = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export audit trail' }).click();
   const download = await downloading;
-  expect(download.suggestedFilename()).toBe('mosaic-audit.json');
+  expect(download.suggestedFilename()).toBe('card-audit.json');
   const content = JSON.parse(await readFile((await download.path())!, 'utf8'));
   expect(content.evaluations).toHaveLength(10);
   expect(content.evaluations[0].receipt.hash).toMatch(/^[a-f0-9]{64}$/);

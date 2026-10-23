@@ -1,18 +1,18 @@
-# MOSAIC: How to run and present the MVP
+# CARD: How to run and present the MVP
 
 ## 1. Start the project
 
 This guide follows the current MVP. It covers setup, a suggested 8-10 minute demonstration, every main feature, and a complete new-evaluation example.
 
-**What to say first:** "MOSAIC is a local risk-assessment gateway for the external resources an AI coding agent wants to use. It scores packages, skills, MCP servers and URLs, explains the evidence, and returns allow, review or deny."
+**What to say first:** "CARD is a local risk-assessment gateway for the external resources an AI coding agent wants to use. It scores packages, skills, MCP servers and URLs, explains the evidence, and returns allow, review or deny."
 
 ### Before the presentation
 
-1. Install Node.js 22 or newer, which includes npm. Download or clone the MOSAIC repository from https://github.com/FireFlamingo/MOSAIC.
-2. Open a terminal in the MOSAIC project folder. You should see package.json there. On this computer, the folder is:
+1. Install Node.js 22 or newer, which includes npm. Download or clone the CARD repository from https://github.com/FireFlamingo/MOSAIC.
+2. Open a terminal in the CARD project folder. You should see package.json there. On this computer, the folder is:
 
 ```text
-C:\Users\amogh\OneDrive\Desktop\Assignments\EDI5\MOSAIC
+C:\Users\amogh\OneDrive\Desktop\Assignments\EDI5\CARD
 ```
 
 3. Run these commands one at a time. The initial dependency installation needs internet access.
@@ -51,7 +51,7 @@ For development only, npm run dev serves the interface on port 4317 and the API 
 
 **7. Demonstrate policy (about 1 minute).** In Policy, move the preview slider: below 20 Allow, 20 to below 50 Needs review, 50-100 Deny. Turn correlation off and save; replay Linked trust signals. Its skill becomes 10 and Allowed. Restore correlation afterwards. Previewing creates no records; old results do not change.
 
-**8. Finish with the audit trail (30 seconds).** Click Export audit trail, or Download audit on Overview. Show the downloaded mosaic-audit.json file. Explain that records persist across restarts and that original evaluation receipts can be checked offline.
+**8. Finish with the audit trail (30 seconds).** Click Export audit trail, or Download audit on Overview. Show the downloaded card-audit.json file. Explain that records persist across restarts and that original evaluation receipts can be checked offline.
 
 **Closing sentence:** "This MVP demonstrates one explainable scoring and review workflow across four artifact types. Automatic interception and independently verified evidence are work for the final project."
 
@@ -93,7 +93,7 @@ Existence and signature values are reports supplied by you, not independently ve
 
 **Four artifact types.** Package assesses a software library request. Skill assesses agent instructions or rules. MCP server assesses a proposed external tool server. Remote URL assesses a proposed URL. All use one request format and the same scoring/review workflow.
 
-**Risk scoring and explanations.** Severity scale and weighted-average aggregation follow Zahan et al., IEEE Security & Privacy (2023). Take each group's strongest raw severity and normalize against the full applicable capacity: 250 for packages/skills/MCP, 300 for URLs. Group weights total 100%; scores need no cap. Age/downloads are context only. Grouping and classifications are MOSAIC adaptations.
+**Risk scoring and explanations.** Severity scale and weighted-average aggregation follow Zahan et al., IEEE Security & Privacy (2023). Take each group's strongest raw severity and normalize against the full applicable capacity: 250 for packages/skills/MCP, 300 for URLs. Group weights total 100%; scores need no cap. Age/downloads are context only. Grouping and classifications are CARD adaptations.
 
 **Overview and totals.** See total, allowed, pending-review and denied counts. Click a total to open the corresponding request list. Overview includes the active policy summary, session trace, decision stream and review inbox.
 
@@ -119,7 +119,7 @@ Existence and signature values are reports supplied by you, not independently ve
 
 ### What the MVP does and does not prove
 
-**Does Allow install or run the artifact?** No. MOSAIC records a decision. It never executes the submitted artifact. An integrating agent or caller would have to use the decision before proceeding.
+**Does Allow install or run the artifact?** No. CARD records a decision. It never executes the submitted artifact. An integrating agent or caller would have to use the decision before proceeding.
 
 **Does it already protect all agent activity automatically?** No. Automatic command interception, agent adapters, MCP proxying and HTTP enforcement are not implemented in this MVP.
 
@@ -133,9 +133,9 @@ Existence and signature values are reports supplied by you, not independently ve
 
 ### If something goes wrong during the demonstration
 
-**npm is not recognised:** install Node.js 22 or newer and reopen the terminal. **package.json cannot be found:** move into the MOSAIC folder before running the commands.
+**npm is not recognised:** install Node.js 22 or newer and reopen the terminal. **package.json cannot be found:** move into the CARD folder before running the commands.
 
-**The browser will not open the app / Gateway offline:** check that npm start is still running, use http://127.0.0.1:4318/, then choose Reconnect or the header refresh button. If the terminal says the port is already in use, check whether an existing MOSAIC server is already running.
+**The browser will not open the app / Gateway offline:** check that npm start is still running, use http://127.0.0.1:4318/, then choose Reconnect or the header refresh button. If the terminal says the port is already in use, check whether an existing CARD server is already running.
 
 **A result differs from this guide:** restore review 20, deny 50 and correlation on. Use exact values and a new session. Old records keep their earlier calculation; replay or submit fresh requests.
 
@@ -144,7 +144,7 @@ Existence and signature values are reports supplied by you, not independently ve
 **To verify an export:** from the project folder run the following, replacing the quoted path with the actual downloaded file location:
 
 ```text
-npm run verify:audit -- "C:/path/to/mosaic-audit.json"
+npm run verify:audit -- "C:/path/to/card-audit.json"
 ```
 
 For an optional pre-presentation check, run npm run check and npm run test:browser. Browser tests use installed Edge on Windows; on other platforms, install the test browser with npx playwright install chromium first. These tests use separate temporary data, leaving your saved presentation records intact.
@@ -157,7 +157,7 @@ For an optional pre-presentation check, run npm run check and npm run test:brows
 
 **Why 25, 50 and 75?** These are raw severity ratings preserving the published weight ratios, not additive points. Current group maxima are 75 provenance, 50 capabilities, 75 content and 50 context. Their total 250 gives weights 30%, 20%, 30%, 20%. URLs additionally assess transport, giving total capacity 300.
 
-**Why these categories?** Weak proxies such as uncertain provenance or encoding are Low. A trust-boundary concern or stronger linked identifier is Medium. Reported nonexistence, remote execution patterns or instruction overrides get conservative High priority. The papers support these concerns; MOSAIC assigns the categories. There has been no independent expert validation yet.
+**Why these categories?** Weak proxies such as uncertain provenance or encoding are Low. A trust-boundary concern or stronger linked identifier is Medium. Reported nonexistence, remote execution patterns or instruction overrides get conservative High priority. The papers support these concerns; CARD assigns the categories. There has been no independent expert validation yet.
 
 **Why remove age/download penalties?** We found no basis for universal "under 7 days" or "under 50 downloads" boundaries. Popular projects can be compromised and new projects can be legitimate. These fields remain context for the reviewer.
 
@@ -169,4 +169,4 @@ For an optional pre-presentation check, run npm run check and npm run test:brows
 
 **Presentation wording:** "We use published severity ratios and normalized weighted-average aggregation. Fixed group ranges produce weights totaling 100%. Each matched concern contributes its weighted share, and the displayed parts add exactly to the final score. The group's definitions and decision policy are documented adaptations; final detection accuracy requires benchmark validation."
 
-**Supporting conference papers:** Spracklen et al., USENIX Security 2025, on hallucinated packages; Ohm et al., DIMVA 2020, on malicious supply-chain attacks; Sejfia and Schäfer, ACM/IEEE ICSE 2022, on malicious npm detection; Abdelnabi et al., ACM AISec 2023, on indirect prompt injection. Complete references and every signal's rationale are in MOSAIC-Scoring-Rationale.pdf and docs/SCORING.md.
+**Supporting conference papers:** Spracklen et al., USENIX Security 2025, on hallucinated packages; Ohm et al., DIMVA 2020, on malicious supply-chain attacks; Sejfia and Schäfer, ACM/IEEE ICSE 2022, on malicious npm detection; Abdelnabi et al., ACM AISec 2023, on indirect prompt injection. Complete references and every signal's rationale are in CARD-Scoring-Rationale.pdf and docs/SCORING.md.

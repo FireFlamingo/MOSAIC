@@ -1,4 +1,6 @@
-# MOSAIC
+# Cross-Artifact Runtime Defense (CARD)
+
+A middleware for autonomous coding agents against malicious dependency injection.
 
 A local, explainable risk gateway for AI coding-agent artifacts. Packages, skills, MCP servers, and remote URLs share one evaluation workflow and one review queue.
 
@@ -34,15 +36,15 @@ Run `npm run test:browser` for the Playwright browser regression suite. It start
 
 The console includes an interactive session trace, review inbox, searchable paginated request stream, evidence inspector, and a threshold preview. See [the demonstration guide](docs/DEMO.md) for a short walkthrough.
 
-The [MVP capabilities and roadmap PDF](output/pdf/MOSAIC-MVP-Guide.pdf) explains the working features, scoring example, demonstration steps, current limitations and planned final-project additions. Rebuild it with `python scripts/build_mvp_guide.py` after installing `reportlab`.
+The [MVP capabilities and roadmap PDF](output/pdf/CARD-MVP-Guide.pdf) explains the working features, scoring example, demonstration steps, current limitations and planned final-project additions. Rebuild it with `python scripts/build_mvp_guide.py` after installing `reportlab`.
 
-For presenting, use the [black-and-white presentation guide](output/pdf/MOSAIC-Presentation-Guide.pdf). It covers setup, a suggested live demonstration, the full feature checklist, and a field-by-field new-evaluation example with its expected result. Its editable source is [docs/PRESENTATION.md](docs/PRESENTATION.md); rebuild with `python scripts/build_presentation_guide.py` and `reportlab` installed.
+For presenting, use the [black-and-white presentation guide](output/pdf/CARD-Presentation-Guide.pdf). It covers setup, a suggested live demonstration, the full feature checklist, and a field-by-field new-evaluation example with its expected result. Its editable source is [docs/PRESENTATION.md](docs/PRESENTATION.md); rebuild with `python scripts/build_presentation_guide.py` and `reportlab` installed.
 
 The interface uses locally bundled [Manrope](https://fontsource.org/fonts/manrope) headings and [Public Sans](https://fontsource.org/fonts/public-sans) text. It makes no Google Fonts requests. Font licenses are included in `public/fonts/` and copied into the production build.
 
 The initial observations and scenarios are **synthetic demonstrations**, not traffic from connected agents or a validated research benchmark. They run locally and never execute submitted artifacts.
 
-Scoring **weighted-v3** uses the severity scale and weighted-average method described by Zahan et al. in **IEEE Security & Privacy (2023)**. Package/skill/MCP groups have fixed budgets of 30/20/30/20, totaling 100. The strongest matched severity is normalized against the full applicable capacity (250, or 300 for URLs); unmatched groups remain in the denominator. For ops-mirror, 75 and 50 become contributions of **30 + 20 = 50/100**. There is no clipping. Group/range choices are MOSAIC adaptations, and the result is not an attack probability. Defaults are review 20, deny 50. Age/downloads have no fixed penalty. See [the complete rules and references](docs/SCORING.md) and [the scoring defence PDF](output/pdf/MOSAIC-Scoring-Rationale.pdf).
+Scoring **weighted-v3** uses the severity scale and weighted-average method described by Zahan et al. in **IEEE Security & Privacy (2023)**. Package/skill/MCP groups have fixed budgets of 30/20/30/20, totaling 100. The strongest matched severity is normalized against the full applicable capacity (250, or 300 for URLs); unmatched groups remain in the denominator. For ops-mirror, 75 and 50 become contributions of **30 + 20 = 50/100**. There is no clipping. Group/range choices are CARD adaptations, and the result is not an attack probability. Defaults are review 20, deny 50. Age/downloads have no fixed penalty. See [the complete rules and references](docs/SCORING.md) and [the scoring defence PDF](output/pdf/CARD-Scoring-Rationale.pdf).
 
 New records include model version, policy and complete weighted calculation. Older records retain original scores and receipts. Upgrade changes only former factory thresholds 35/70 or 50/75 to 20/50; custom settings remain. Replay fresh examples for the current model.
 
@@ -88,4 +90,4 @@ The larger brief's 200–500-case incident corpus, external baseline comparisons
 
 Local state lives under `data/` and is excluded from Git. Keep audit exports private if requests contain confidential content.
 
-Verify an exported evaluation chain with `npm run verify:audit -- path/to/mosaic-audit.json`. This detects broken links or changed evaluation contents. It does not authenticate the author, detect a complete rewrite, or verify the separately recorded review and policy events. The rule definitions are documented in [docs/SCORING.md](docs/SCORING.md).
+Verify an exported evaluation chain with `npm run verify:audit -- path/to/card-audit.json`. This detects broken links or changed evaluation contents. It does not authenticate the author, detect a complete rewrite, or verify the separately recorded review and policy events. The rule definitions are documented in [docs/SCORING.md](docs/SCORING.md).

@@ -18,7 +18,7 @@ export function verifyEvaluations(evaluations: Evaluation[]): { valid: boolean; 
 }
 
 async function main() {
-  if (!process.argv[2]) throw new Error('Usage: npm run verify:audit -- path/to/mosaic-audit.json');
+  if (!process.argv[2]) throw new Error('Usage: npm run verify:audit -- path/to/card-audit.json');
   const data = JSON.parse(await readFile(process.argv[2], 'utf8'));
   if (!Array.isArray(data.evaluations)) throw new Error('Export must contain an evaluations array.');
   const result = verifyEvaluations(data.evaluations);

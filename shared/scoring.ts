@@ -1,4 +1,4 @@
-/** Literature-sourced ordinal weights; MOSAIC's classifications are adaptations. */
+/** Literature-sourced ordinal weights; CARD's classifications are adaptations. */
 export const SCORING_VERSION = 'weighted-v3';
 export const RECOMMENDED_POLICY = { reviewThreshold: 20, denyThreshold: 50, correlationEnabled: true };
 export const SEVERITY_WEIGHTS = { low: 2.5, medium: 5, high: 7.5, critical: 10 } as const;

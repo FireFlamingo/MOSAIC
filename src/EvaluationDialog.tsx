@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
-  Check,
   CheckCheck,
   ChevronDown,
   Circle,
@@ -15,8 +14,11 @@ import type {
   ArtifactRequest,
   ArtifactType,
   Evaluation,
+  MemoryRule,
 } from "../shared/types";
 import { EVIDENCE_GROUPS, SCORING_SOURCES, SCORING_VERSION, signalContribution } from "../shared/scoring";
+import { ruleDecisionOf } from "../shared/feedback";
+import { FeedbackPanel, FeedbackResult, MemoryNotice, type ReviewSubmission } from "./Feedback";
 import {
   ArtifactIcon,
   Badge,
@@ -36,11 +38,13 @@ interface Props {
   reconnecting: boolean;
   onReconnect: () => Promise<void>;
   onClose: () => void;
-  onReview: (decision: "allow" | "deny", note: string) => Promise<void>;
+  onReview: (input: ReviewSubmission) => Promise<void>;
   onSubmit: (request: ArtifactRequest) => Promise<void>;
+  rules: MemoryRule[];
 }
 export function EvaluationDialog({
   selected,
+  rules,
   blocked,
   busy,
   online,
@@ -51,10 +55,8 @@ export function EvaluationDialog({
   onSubmit,
 }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
-  const [formType, setFormType] = useState<ArtifactType>("package"),
-    [note, setNote] = useState("");
+  const [formType, setFormType] = useState<ArtifactType>("package");
   useEffect(() => {
-    setNote("");
     dialog.current?.focus();
   }, [selected?.id]);
   useEffect(() => {
@@ -155,12 +157,13 @@ export function EvaluationDialog({
               </div>
               <Badge decision={resolved(selected)} />
             </div>
+            <MemoryNotice evaluation={selected} />
             <div className="scoring-explanation">
               {selected.scoringVersion === SCORING_VERSION ? (
                 <>
                   <strong>Normalized weighted score · v3</strong>
                   <p>Each applicable evidence group has a fixed share of a 100-point budget. Severity ratings are weighted against the full available capacity. Age and downloads are context only.</p>
-                  <p>The severity scale and weighted-average method follow <a href={SCORING_SOURCES.weights.url} target="_blank" rel="noreferrer">Zahan et al., IEEE Security &amp; Privacy (2023)</a>. Grouping and signal classifications remain MOSAIC adaptations.</p>
+                  <p>The severity scale and weighted-average method follow <a href={SCORING_SOURCES.weights.url} target="_blank" rel="noreferrer">Zahan et al., IEEE Security &amp; Privacy (2023)</a>. Grouping and signal classifications remain CARD adaptations.</p>
                 </>
               ) : (
                 <>
@@ -217,7 +220,7 @@ export function EvaluationDialog({
                       {s.sources?.length ? (
                         <details className="signal-sources">
                           <summary>Research &amp; rationale</summary>
-                          <p>These sources support the risk concern; MOSAIC assigns its severity using the shared rubric.</p>
+                          <p>These sources support the risk concern; CARD assigns its severity using the shared rubric.</p>
                           {s.sources.map((source) => <a key={source} href={SCORING_SOURCES[source].url} target="_blank" rel="noreferrer">{SCORING_SOURCES[source].title}</a>)}
                         </details>
                       ) : null}
@@ -248,8 +251,11 @@ export function EvaluationDialog({
                 <dt>Scoring model</dt>
                 <dd>{selected.scoringVersion ?? "heuristic-v1"}</dd>
                 {selected.policySnapshot && <><dt>Policy at evaluation</dt><dd>Review {selected.policySnapshot.reviewThreshold} · Deny {selected.policySnapshot.denyThreshold}</dd></>}
+                <dt>Decision from score</dt>
+                <dd>{decisionLabel[ruleDecisionOf(selected)]}</dd>
                 <dt>Original decision</dt>
-                <dd>{decisionLabel[selected.decision]}</dd>
+                <dd>{decisionLabel[selected.decision]}{selected.memory?.applied ? ` (by ${selected.memory.applied.effect} rule)` : ""}</dd>
+                {selected.fingerprint && <><dt>Version fingerprint</dt><dd className="fingerprint-value">{selected.fingerprint.slice(0, 16)}…</dd></>}
               </dl>
               <details className="request-evidence">
                 <summary>
@@ -276,54 +282,10 @@ export function EvaluationDialog({
                 <small>Original evaluation · SHA-256</small>
               </div>
             </div>
-            {selected.decision === "review" && !selected.review && (
-              <div className="review-action-panel">
-                <span className="section-kicker">YOUR DECISION</span>
-                <h3>Allow this request to proceed?</h3>
-                <p>Your note is saved alongside the original evaluation.</p>
-                <label className="sr-only" htmlFor="review-note">
-                  Reviewer note
-                </label>
-                <textarea
-                  id="review-note"
-                  maxLength={500}
-                  placeholder="Add a reason for your decision…"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                />
-                <div>
-                  <button
-                    className="button deny-button"
-                    disabled={blocked || !note.trim()}
-                    onClick={() => void onReview("deny", note.trim())}
-                  >
-                    <X size={15} />
-                    Deny request
-                  </button>
-                  <button
-                    className="button approve-button"
-                    disabled={blocked || !note.trim()}
-                    onClick={() => void onReview("allow", note.trim())}
-                  >
-                    <Check size={15} />
-                    Allow request
-                  </button>
-                </div>
-              </div>
-            )}
-            {selected.review && (
-              <div className="review-resolution">
-                <CheckCheck size={20} />
-                <div>
-                  <strong>
-                    Human review · {decisionLabel[selected.review.decision]}
-                  </strong>
-                  <p>{selected.review.note}</p>
-                  <small>
-                    {new Date(selected.review.timestamp).toLocaleString()}
-                  </small>
-                </div>
-              </div>
+            {selected.review ? (
+              <FeedbackResult evaluation={selected} rules={rules} />
+            ) : (
+              <FeedbackPanel evaluation={selected} rules={rules} blocked={blocked} onSubmit={onReview} />
             )}
           </>
         ) : (
