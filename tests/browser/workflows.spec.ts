@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { test, expect } from './fixture';
 import type { AppState, Evaluation } from '../../shared/types';
+import { SCORING_VERSION } from '../../shared/scoring';
 
 for (const [label, type] of [['Package', 'package'], ['Skill', 'skill'], ['MCP server', 'mcp'], ['Remote URL', 'url']]) {
   test(`evaluate ${label} with dropdown evidence and inspect its receipt`, async ({ page }) => {
@@ -17,8 +18,6 @@ for (const [label, type] of [['Package', 'package'], ['Skill', 'skill'], ['MCP s
     await exists.press('Tab');
     await expect(exists).toHaveValue('true');
     await dialog.getByRole('combobox', { name: 'Signature', exact: true }).selectOption('false');
-    await dialog.getByRole('spinbutton', { name: 'Age in days' }).fill('100');
-    await dialog.getByRole('spinbutton', { name: 'Downloads' }).fill('1000');
     await dialog.getByText('Content & permissions', { exact: true }).click();
     await dialog.getByRole('textbox', { name: 'Static content' }).fill('Read the selected project documentation.');
     await dialog.getByRole('checkbox', { name: 'read:workspace', exact: true }).check();
@@ -28,9 +27,9 @@ for (const [label, type] of [['Package', 'package'], ['Skill', 'skill'], ['MCP s
     expect(result.status()).toBe(201);
     const evaluation: Evaluation = await result.json();
     expect(evaluation.request.type).toBe(type);
-    expect(evaluation.request.metadata).toMatchObject({ exists: true, signed: false, ageDays: 100, downloads: 1000, permissions: ['read:workspace'] });
+    expect(evaluation.request.metadata).toMatchObject({ exists: true, signed: false, permissions: ['read:workspace'] });
     expect(evaluation.score).toBe(type === 'url' ? 8.33 : 10);
-    expect(evaluation.scoringVersion).toBe('weighted-v3');
+    expect(evaluation.scoringVersion).toBe(SCORING_VERSION);
     await expect(page.getByRole('dialog', { name: 'Evaluation details' })).toBeVisible();
     await expect(dialog).toContainText(evaluation.receipt.hash);
     await dialog.getByText('Supplied metadata & content', { exact: true }).click();
@@ -98,15 +97,13 @@ test('presentation example shows 20 weighted points, exact arithmetic and the IE
   await dialog.getByRole('textbox', { name: 'Session ID' }).fill('presentation-review-01');
   await dialog.getByRole('textbox', { name: 'Source', exact: true }).fill('https://example.invalid/tools');
   await dialog.getByRole('combobox', { name: 'Signature', exact: true }).selectOption('false');
-  await dialog.getByRole('spinbutton', { name: 'Age in days' }).fill('6');
-  await dialog.getByRole('spinbutton', { name: 'Downloads' }).fill('18');
   await dialog.getByText('Content & permissions', { exact: true }).click();
   await dialog.getByRole('textbox', { name: 'Static content' }).fill('Summarise the selected project notes.');
   await dialog.getByRole('checkbox', { name: 'network:egress', exact: true }).check();
   const response = page.waitForResponse((r) => r.url().endsWith('/api/evaluate') && r.request().method() === 'POST');
   await dialog.getByRole('button', { name: 'Evaluate request' }).click();
   const result: Evaluation = await (await response).json();
-  expect([result.score, result.decision, result.scoringVersion]).toEqual([20, 'review', 'weighted-v3']);
+  expect([result.score, result.decision, result.scoringVersion]).toEqual([20, 'review', SCORING_VERSION]);
   await expect(dialog).toContainText('Age and downloads are context only');
   await expect(dialog).toContainText('Severity 25, already covered');
   await expect(dialog.getByLabel('Score calculation')).toContainText('75 + 50 + 75 + 50 = 250');
@@ -211,9 +208,9 @@ test('session dropdown and decision dropdown show the selected records', async (
   await expect(page.getByRole('heading', { name: 'All requests' })).toBeVisible();
   await expect(page.locator('tbody tr')).toHaveCount(7);
   await page.getByRole('combobox', { name: 'Filter by decision' }).selectOption('deny');
-  await expect(page.locator('tbody tr')).toHaveCount(1);
-  await page.getByRole('combobox', { name: 'Filter by decision' }).selectOption('review');
   await expect(page.locator('tbody tr')).toHaveCount(2);
+  await page.getByRole('combobox', { name: 'Filter by decision' }).selectOption('review');
+  await expect(page.locator('tbody tr')).toHaveCount(1);
 });
 
 test('ops-mirror displays weighted 30 plus 20 as 50 with a full 100-point budget', async ({ page }, testInfo) => {

@@ -23,6 +23,7 @@ function validateRequest(value: unknown): ArtifactRequest | undefined {
   if (!isObject(value) || !TYPES.has(value.type as string) || !isText(value.name) || !isText(value.sessionId)) return undefined;
   if (value.source !== undefined && !isText(value.source, 1_500)) return undefined;
   if (value.content !== undefined && (typeof value.content !== 'string' || value.content.length > MAX_TEXT)) return undefined;
+  if (value.ecosystem !== undefined && value.ecosystem !== 'npm' && value.ecosystem !== 'pypi') return undefined;
   let metadata: ArtifactRequest['metadata'];
   if (value.metadata !== undefined) {
     if (!isObject(value.metadata)) return undefined;
@@ -33,7 +34,7 @@ function validateRequest(value: unknown): ArtifactRequest | undefined {
     if (item.permissions !== undefined && (!Array.isArray(item.permissions) || item.permissions.length > 12 || item.permissions.some((p) => typeof p !== 'string' || !PERMISSIONS.has(p)))) return undefined;
     metadata = { exists: item.exists as boolean | undefined, signed: item.signed as boolean | undefined, ageDays: item.ageDays as number | undefined, downloads: item.downloads as number | undefined, permissions: item.permissions as string[] | undefined };
   }
-  return { type: value.type as ArtifactRequest['type'], name: value.name.trim(), sessionId: value.sessionId.trim(), source: value.source as string | undefined, content: value.content as string | undefined, metadata };
+  return { type: value.type as ArtifactRequest['type'], name: value.name.trim(), sessionId: value.sessionId.trim(), source: value.source as string | undefined, content: value.content as string | undefined, ...(value.ecosystem ? { ecosystem: value.ecosystem as 'npm' | 'pypi' } : {}), metadata };
 }
 
 function validatePolicy(value: unknown): Policy | undefined {

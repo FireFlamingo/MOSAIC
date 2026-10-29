@@ -10,6 +10,7 @@ import type { StateStore, ReviewInput } from '../server/store.js';
 import type { ArtifactRequest, Evaluation, MemoryRule } from '../shared/types.js';
 import { feedbackMetrics, feedbackOutcome, thresholdWhatIf } from '../shared/feedback.js';
 import { verifyEvaluations } from '../scripts/verify-audit.js';
+import { SCORING_VERSION } from '../shared/scoring.js';
 
 // Medium-severity only (sensitive permissions), so it is held for review and may be trusted.
 const kit: ArtifactRequest = { type: 'package', name: 'test-kit', sessionId: 'first', source: 'registry://example.invalid', metadata: { exists: true, signed: true, permissions: ['network:egress', 'secrets:read'] } };
@@ -191,7 +192,7 @@ test('applyMemory checks a block before trust and ignores revoked rules', () => 
 test('feedback metrics compare the rule decision with human labels and skip unlabelled requests', () => {
   const make = (score: number, ruleDecision: Evaluation['decision'], verdict?: 'allow' | 'deny', applied?: 'trust'): Evaluation => ({
     id: `${score}-${verdict}`, timestamp: '', request: { ...kit }, score, decision: applied ? 'allow' : ruleDecision, ruleDecision, signals: [{ id: 'unsigned', label: 'Unsigned artifact', score: 25, weight: 1, reason: '' }],
-    durationMs: 1, receipt: { hash: '', previousHash: '' }, scoringVersion: 'weighted-v3',
+    durationMs: 1, receipt: { hash: '', previousHash: '' }, scoringVersion: SCORING_VERSION,
     ...(verdict ? { review: { decision: verdict, note: '', timestamp: '' } } : {}),
     ...(applied ? { memory: { applied: { ruleId: 'r', effect: applied, createdAt: '', reviewer: '', note: '' } } } : {}),
   });

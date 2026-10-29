@@ -6,6 +6,8 @@ export interface ArtifactRequest {
   sessionId: string;
   source?: string;
   content?: string;
+  /** Package registry, when known. Without it, package names are compared against every registry's reference list. */
+  ecosystem?: 'npm' | 'pypi';
   metadata?: { exists?: boolean; ageDays?: number; downloads?: number; signed?: boolean; permissions?: string[] };
 }
 export interface Signal {
@@ -22,6 +24,7 @@ export interface ScoringBreakdown {
   groups: Array<{ group: import('./scoring').EvidenceGroup; capacity: number; rawSeverity: number; weight: number; contribution: number }>;
 }
 export interface Policy { reviewThreshold: number; denyThreshold: number; correlationEnabled: boolean }
+export interface DecisionFloor { decision: 'review' | 'deny'; signalId: string; reason: string }
 export type FeedbackReason =
   | 'expected-tool' | 'wrong-signal' | 'other-safe'
   | 'malicious' | 'policy-violation' | 'insufficient-evidence' | 'other-unsafe';
@@ -61,6 +64,8 @@ export interface Evaluation {
   scoringBreakdown?: ScoringBreakdown;
   /** Decision from the score and thresholds alone. Absent on records made before decision memory existed. */
   ruleDecision?: Decision;
+  /** Set when a single critical finding raised the threshold decision. */
+  decisionFloor?: DecisionFloor;
   fingerprint?: string;
   memory?: MemoryOutcome;
 }

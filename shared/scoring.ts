@@ -1,5 +1,5 @@
 /** Literature-sourced ordinal weights; CARD's classifications are adaptations. */
-export const SCORING_VERSION = 'weighted-v3';
+export const SCORING_VERSION = 'weighted-v4';
 export const RECOMMENDED_POLICY = { reviewThreshold: 20, denyThreshold: 50, correlationEnabled: true };
 export const SEVERITY_WEIGHTS = { low: 2.5, medium: 5, high: 7.5, critical: 10 } as const;
 export type Severity = keyof typeof SEVERITY_WEIGHTS;
@@ -21,6 +21,7 @@ export const SCORING_SOURCES = {
   ssrf: { title: 'OWASP · SSRF Prevention Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html' },
   transport: { title: 'MITRE · CWE-319', url: 'https://cwe.mitre.org/data/definitions/319.html' },
   agent: { title: 'OWASP · AI Agent Security Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html' },
+  typosquatting: { title: 'Agten et al. · NDSS 2015', url: 'https://www.ndss-symposium.org/ndss2015/ndss-2015-programme/seven-months-worth-mistakes-longitudinal-study-typosquatting-abuse/', doi: '10.14722/ndss.2015.23058' },
 } as const;
 export type ScoringSource = keyof typeof SCORING_SOURCES;
 
@@ -38,10 +39,26 @@ export const SIGNAL_RULES = {
   'url-not-https': { label: 'Non-HTTPS URL', severity: 'medium', group: 'transport', sources: ['transport'] },
   'url-local-host': { label: 'Local or private host', severity: 'medium', group: 'transport', sources: ['ssrf'] },
   'url-invalid': { label: 'Invalid URL', severity: 'medium', group: 'transport', sources: ['ssrf'] },
+  'domain-lookalike': { label: 'Lookalike domain', severity: 'medium', group: 'transport', sources: ['typosquatting'] },
   'session-correlation': { label: 'Session correlation', severity: 'low', group: 'context', sources: ['injection', 'agent'] },
   'name-correlation': { label: 'Cross-artifact name reuse', severity: 'medium', group: 'context', sources: ['injection', 'hallucination'] },
 } as const satisfies Record<string, { label: string; severity: Severity; group: EvidenceGroup; sources: readonly ScoringSource[] }>;
 export type SignalId = keyof typeof SIGNAL_RULES;
+
+/**
+ * Minimum decisions for single findings that the weighted average would otherwise dilute: one strong
+ * warning in one group cannot reach a threshold on its own when every group stays in the denominator.
+ * A floor only ever raises a decision; thresholds still apply above it, and policy cannot lower a floor.
+ */
+export const DECISION_FLOORS: Partial<Record<SignalId, { decision: 'review' | 'deny'; reason: string }>> = {
+  'metadata-missing': { decision: 'deny', reason: 'An artifact that does not exist cannot be installed as named. Allowing it lets anyone register the name later (slopsquatting).' },
+  'remote-payload': { decision: 'review', reason: 'Downloaded code piped straight into a shell runs unreviewed code; a person must look before it proceeds.' },
+  'instruction-override': { decision: 'review', reason: 'Text that tries to override the agent\'s instructions needs a human decision, whatever the overall score.' },
+  'url-local-host': { decision: 'review', reason: 'A request to a local or private network address crosses a trust boundary; it needs a human decision.' },
+  'url-invalid': { decision: 'review', reason: 'An address that cannot be parsed cannot be assessed, so it is held instead of allowed.' },
+  'domain-lookalike': { decision: 'review', reason: 'A near-copy of a well-known domain is a common phishing and squatting tactic; a person should confirm it is the intended site.' },
+  'name-lookalike': { decision: 'review', reason: 'A near-copy of a popular name is the typosquatting pattern; a person should confirm it is the intended artifact.' },
+};
 
 /** All applicable groups remain in the denominator, including those with no matches. */
 export function scoringProfile(type: 'package' | 'skill' | 'mcp' | 'url') {

@@ -102,11 +102,10 @@ export function EvaluationDialog({
       sessionId: text("session"),
       source: text("source") || undefined,
       content: text("content") || undefined,
+      ...(formType === "package" && text("ecosystem") !== "unknown" ? { ecosystem: text("ecosystem") as "npm" | "pypi" } : {}),
       metadata: {
         exists: flag("exists"),
         signed: flag("signed"),
-        ageDays: text("age") ? Number(text("age")) : undefined,
-        downloads: text("downloads") ? Number(text("downloads")) : undefined,
         permissions: form.getAll("permission") as string[],
       },
     });
@@ -161,7 +160,7 @@ export function EvaluationDialog({
             <div className="scoring-explanation">
               {selected.scoringVersion === SCORING_VERSION ? (
                 <>
-                  <strong>Normalized weighted score · v3</strong>
+                  <strong>Normalized weighted score · {SCORING_VERSION}</strong>
                   <p>Each applicable evidence group has a fixed share of a 100-point budget. Severity ratings are weighted against the full available capacity. Age and downloads are context only.</p>
                   <p>The severity scale and weighted-average method follow <a href={SCORING_SOURCES.weights.url} target="_blank" rel="noreferrer">Zahan et al., IEEE Security &amp; Privacy (2023)</a>. Grouping and signal classifications remain CARD adaptations.</p>
                 </>
@@ -185,6 +184,13 @@ export function EvaluationDialog({
                     </div>
                   ))}
                   <div className="scoring-calculation-total"><span>Total</span><span>{selected.scoringBreakdown.rawTotal}/{selected.scoringBreakdown.normalizationTotal} × 100</span><strong>{selected.score}/100</strong></div>
+                  {selected.decisionFloor && (
+                    <div className="scoring-calculation-floor">
+                      <span>Decision floor<small>{selected.signals.find((s) => s.id === selected.decisionFloor!.signalId)?.label}</small></span>
+                      <span>{selected.decisionFloor.reason}</span>
+                      <strong>At least {decisionLabel[selected.decisionFloor.decision]}</strong>
+                    </div>
+                  )}
                 </div>
                 <p>Unmatched groups contribute 0. Contributions are rounded to two decimals together so the displayed sum matches the total.</p>
               </div>
@@ -375,28 +381,16 @@ export function EvaluationDialog({
                   </select>
                 </label>
               </div>
-              <div className="form-columns">
+              {formType === "package" && (
                 <label className="form-field">
-                  Age in days
-                  <input
-                    type="number"
-                    min={0}
-                    max={1000000000}
-                    name="age"
-                    placeholder="Unknown"
-                  />
+                  Registry
+                  <select name="ecosystem" defaultValue="unknown">
+                    <option value="unknown">Unknown (compare with npm and PyPI)</option>
+                    <option value="npm">npm</option>
+                    <option value="pypi">PyPI</option>
+                  </select>
                 </label>
-                <label className="form-field">
-                  Downloads
-                  <input
-                    type="number"
-                    min={0}
-                    max={1000000000}
-                    name="downloads"
-                    placeholder="Unknown"
-                  />
-                </label>
-              </div>
+              )}
               <details className="advanced-fields">
                 <summary>
                   Content & permissions

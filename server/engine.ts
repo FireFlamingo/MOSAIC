@@ -1,14 +1,10 @@
-import type { ArtifactRequest, Decision, Evaluation, Policy, Signal, ScoringBreakdown } from '../shared/types';
-import { normalizeName, packageBaseName } from '../shared/names';
-import { EVIDENCE_GROUPS, RECOMMENDED_POLICY, SCORING_VERSION, SEVERITY_WEIGHTS, SIGNAL_RULES, scoringProfile, type EvidenceGroup, type SignalId } from '../shared/scoring';
+import type { ArtifactRequest, Decision, DecisionFloor, Evaluation, Policy, Signal, ScoringBreakdown } from '../shared/types';
+import { normalizeName } from '../shared/names';
+import { lookalikeDomain, similarMcpServer, similarPopularPackage } from './lookalike';
+import { DECISION_FLOORS, EVIDENCE_GROUPS, RECOMMENDED_POLICY, SCORING_VERSION, SEVERITY_WEIGHTS, SIGNAL_RULES, scoringProfile, type EvidenceGroup, type SignalId } from '../shared/scoring';
 
 /** Conservative defaults for the local, deterministic MVP evaluator. */
 export const defaultPolicy: Policy = { ...RECOMMENDED_POLICY };
-
-const knownPackages = [
-  'react', 'react-dom', 'typescript', 'vite', 'express', 'lodash', 'axios',
-  'zod', 'next', 'tailwindcss', 'eslint', 'prettier', 'node-fetch', 'dotenv',
-];
 
 const dangerousPermissions = new Set([
   'filesystem:write', 'filesystem:read', 'network', 'network:all', 'network:egress', 'process:spawn',
@@ -60,33 +56,22 @@ export function scoreSignals(type: ArtifactRequest['type'], signals: Signal[]): 
   };
 }
 
-function levenshtein(left: string, right: string): number {
-  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
-  for (let i = 1; i <= left.length; i += 1) {
-    let diagonal = previous[0];
-    previous[0] = i;
-    for (let j = 1; j <= right.length; j += 1) {
-      const saved = previous[j];
-      previous[j] = Math.min(previous[j] + 1, previous[j - 1] + 1, diagonal + (left[i - 1] === right[j - 1] ? 0 : 1));
-      diagonal = saved;
-    }
-  }
-  return previous[right.length];
-}
-
-function similarKnownPackage(name: string): string | undefined {
-  const normal = normalizeName(name);
-  return knownPackages.find((candidate) => {
-    const known = normalizeName(candidate);
-    const distance = levenshtein(normal, known);
-    return normal !== known && normal.length >= 4 && distance <= Math.max(1, Math.floor(known.length * 0.2));
-  });
-}
-
 function deriveDecision(score: number, policy: Policy): Decision {
   if (score >= policy.denyThreshold) return 'deny';
   if (score >= policy.reviewThreshold) return 'review';
   return 'allow';
+}
+
+const rank: Record<Decision, number> = { allow: 0, review: 1, deny: 2 };
+
+/** The strongest floor among the signals that fired, if it is stricter than the threshold decision. */
+function decisionFloor(signals: Signal[], thresholdDecision: Decision): DecisionFloor | undefined {
+  let strongest: DecisionFloor | undefined;
+  for (const item of signals) {
+    const floor = DECISION_FLOORS[item.id as SignalId];
+    if (floor && (!strongest || rank[floor.decision] > rank[strongest.decision])) strongest = { decision: floor.decision, signalId: item.id, reason: floor.reason };
+  }
+  return strongest && rank[strongest.decision] > rank[thresholdDecision] ? strongest : undefined;
 }
 
 /**
@@ -97,7 +82,7 @@ export function evaluateRisk(
   request: ArtifactRequest,
   history: Evaluation[],
   policy: Policy,
-): { score: number; decision: Decision; signals: Signal[]; scoringVersion: string; policySnapshot: Policy; scoringBreakdown: ScoringBreakdown } {
+): { score: number; decision: Decision; signals: Signal[]; scoringVersion: string; policySnapshot: Policy; scoringBreakdown: ScoringBreakdown; decisionFloor?: DecisionFloor } {
   const signals: Signal[] = [];
   const metadata = request.metadata;
 
@@ -107,9 +92,12 @@ export function evaluateRisk(
     signals.push(signal('metadata-unverified', 'No existence result was supplied. Unknown evidence is treated as a low concern, not proof that the artifact is missing.'));
   }
 
-  const similar = request.type === 'package' ? similarKnownPackage(packageBaseName(request.name)) : undefined;
-  if (similar) {
-    signals.push(signal('name-lookalike', `“${request.name}” is unusually similar to the known package “${similar}”. Similarity is a review cue, not proof of impersonation.`));
+  if (request.type === 'package') {
+    const similar = similarPopularPackage(request.name, request.ecosystem);
+    if (similar) signals.push(signal('name-lookalike', `“${request.name}” is one small edit away from the popular package “${similar}” (a letter added, missing, changed or swapped). Similarity is a review cue, not proof of impersonation.`));
+  } else if (request.type === 'mcp') {
+    const similar = similarMcpServer(request.name);
+    if (similar) signals.push(signal('name-lookalike', `“${request.name}” is one small edit away from the well-known MCP server “${similar}”. Similarity is a review cue, not proof of impersonation.`));
   }
 
   if (metadata) {
@@ -143,6 +131,11 @@ export function evaluateRisk(
       const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
       if (host === 'localhost' || host.endsWith('.localhost') || host === '::1' || /^127(?:\.\d{1,3}){3}$/.test(host) || /^10(?:\.\d{1,3}){3}$/.test(host) || /^192\.168(?:\.\d{1,3}){2}$/.test(host) || /^169\.254(?:\.\d{1,3}){2}$/.test(host) || /^172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}$/.test(host) || /^f[cd][0-9a-f:]*$/i.test(host) || /^fe[89ab][0-9a-f:]*$/i.test(host)) {
         signals.push(signal('url-local-host', 'URL names a local or private network host. This can cross a network trust boundary; approved internal services can also be legitimate.'));
+      } else if (!/^[\d.]+$/.test(host) && !host.includes(':')) {
+        const lookalike = lookalikeDomain(host);
+        if (lookalike) signals.push(signal('domain-lookalike', lookalike.how === 'subdomain'
+          ? `“${host}” puts the trusted name “${lookalike.imitates}” in front of a different domain. The real owner is the part at the end.`
+          : `“${host}” is one small edit away from the well-known domain “${lookalike.imitates}”. Lookalike domains are a common phishing and squatting tactic.`));
       }
     } catch {
       signals.push(signal('url-invalid', 'URL could not be parsed locally, so its destination cannot be assessed. Holding it for review is a CARD input-validation policy.'));
@@ -165,5 +158,10 @@ export function evaluateRisk(
   }
 
   const result = scoreSignals(request.type, signals);
-  return { ...result, decision: deriveDecision(result.score, policy), scoringVersion: SCORING_VERSION, policySnapshot: { ...policy } };
+  const thresholdDecision = deriveDecision(result.score, policy);
+  const floor = decisionFloor(result.signals, thresholdDecision);
+  return {
+    ...result, decision: floor?.decision ?? thresholdDecision, ...(floor ? { decisionFloor: floor } : {}),
+    scoringVersion: SCORING_VERSION, policySnapshot: { ...policy },
+  };
 }
