@@ -145,7 +145,7 @@ const decisionWords = { allow: 'allowed', review: 'held for review', deny: 'deni
 
 /** One sentence the agent (and the person reading its transcript) can act on. */
 export function explain(evaluation: Evaluation, label: string, final: 'allow' | 'deny', cardUrl: string): string {
-  const parts = [`CARD ${final === 'deny' ? 'blocked' : 'allowed'} ${label}`];
+  const parts = [`CARD ${final === 'deny' ? 'blocked' : 'allowed'} "${evaluation.request.name}" (from: ${label})`];
   if (evaluation.review) parts.push(`Reviewer ${evaluation.review.reviewer ?? ''} decided: ${evaluation.review.note}`.replace('  ', ' '));
   else if (evaluation.memory?.applied) parts.push(`${evaluation.memory.applied.effect === 'block' ? 'Blocked' : 'Trusted'} earlier by ${evaluation.memory.applied.reviewer}: ${evaluation.memory.applied.note}`);
   else {

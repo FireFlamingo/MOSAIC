@@ -29,6 +29,11 @@ test('finds packages in npm-family installs, and skips local paths, flags and no
   assert.deepEqual(names('npx create-react-app my-app'), ['package:npm:create-react-app']);
   assert.deepEqual(names('npm exec -- cowsay hi'), ['package:npm:cowsay']);
   assert.deepEqual(names('npm run build && npm test && echo npm install fake'), []);
+  // Shell redirections are not package names (a real agent wrote "npm install dayjs 2>&1 | tail -20").
+  assert.deepEqual(names('cd app && npm install dayjs 2>&1 | tail -20 && npm ls dayjs'), ['package:npm:dayjs']);
+  assert.deepEqual(names('npm i zod > install.log 2>/dev/null'), ['package:npm:zod']);
+  assert.deepEqual(names('npm install zod *>$null'), ['package:npm:zod']);
+  assert.deepEqual(names('pip install "rich>=13" 2>&1'), ['package:pypi:rich']);
 });
 
 test('a bare install reads the dependencies from package.json', () => {
@@ -120,7 +125,7 @@ test('allow, deny with a readable reason, and fail closed when CARD is unreachab
   const denied = fakeCard({ evaluate: [{ decision: 'deny', score: 30, signals: [{ id: 'metadata-missing', label: 'Artifact reported missing', score: 75, weight: 1, reason: '' }] }] });
   const verdict = await onPreToolUse(install('npm install react-auth-helperz'), 'claude', denied.deps);
   assert.equal(verdict.allow, false);
-  assert.match((verdict as { reason: string }).reason, /CARD blocked npm install react-auth-helperz.*Artifact reported missing/);
+  assert.match((verdict as { reason: string }).reason, /CARD blocked .*npm install react-auth-helperz.*Artifact reported missing/);
   const down = fakeCard({ evaluate: [], down: true });
   const closed = await onPreToolUse(install('npm install zod'), 'codex', down.deps);
   assert.equal(closed.allow, false);

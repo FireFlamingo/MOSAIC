@@ -157,8 +157,20 @@ function positional(args: string[], valueFlags: Set<string>): string[] {
   return out;
 }
 
+/** Drops shell redirections ("2>&1", "> out.txt", "2>/dev/null", PowerShell "*>$null"); they are not arguments. */
+function withoutRedirections(tokens: string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    if (/^(\d*|&|\*)(>>?|<)$/.test(token)) { i += 1; continue; }
+    if (/^(\d*|&|\*)?(>>?|<)/.test(token)) continue;
+    out.push(token);
+  }
+  return out;
+}
+
 function fromSegment(segment: string, whole: string, cwd: string, readFile: ReadFile): Extracted[] {
-  const tokens = unwrap(tokenize(segment));
+  const tokens = unwrap(withoutRedirections(tokenize(segment)));
   if (!tokens.length) return [];
   const name = program(tokens[0]);
   let args = tokens.slice(1);

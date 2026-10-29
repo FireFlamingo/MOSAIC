@@ -61,7 +61,7 @@ test('the registry proxy relays allowed packages and refuses denied ones with CA
     assert.deepEqual(await ok.json(), { upstream: 'https://npm.upstream/zod' });
     const denied = await fetch(`${base}/react-auth-helperz`);
     assert.equal(denied.status, 403);
-    assert.match((await denied.json()).error, /CARD blocked npm install react-auth-helperz.*Artifact reported missing/);
+    assert.match((await denied.json()).error, /CARD blocked .*npm install react-auth-helperz.*Artifact reported missing/);
     assert.equal((await fetch(`${base}/zod/-/zod-3.23.8.tgz`)).status, 200);
     assert.deepEqual(card.asked, ['zod', 'react-auth-helperz', 'zod@3.23.8'], 'each version download is checked on its own');
     const pip = await fetch(`${base}/simple/requests/`);
