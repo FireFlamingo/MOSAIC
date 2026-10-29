@@ -60,6 +60,7 @@ async function npmEvidence(spec: string, options: EvidenceOptions, now: Date): P
     const scripts = Object.entries(entry?.scripts ?? {}).filter(([key]) => ['preinstall', 'install', 'postinstall'].includes(key));
     if (scripts.length) report.installScripts = scripts.map(([key, value]) => `${key}: ${value}`).join('\n');
     report.version = chosen;
+    if (chosen && /-security$/.test(chosen)) report.takenDown = true;
   } catch (error) {
     if (error instanceof NotFound) {
       report.fields.exists = field(false, 'registry', `npm has no package named "${name}".`);
@@ -163,6 +164,7 @@ export async function withEvidence(request: ArtifactRequest, options: EvidenceOp
     ageDays: checked ? value('ageDays') as number | undefined : callerClaims.ageDays,
     downloads: checked ? value('downloads') as number | undefined : callerClaims.downloads,
     ...(report.resolvedAddresses ? { resolvedAddresses: report.resolvedAddresses } : {}),
+    ...(report.takenDown ? { takenDown: true } : {}),
   };
   const content = report.installScripts ? `${request.content ? `${request.content}\n` : ''}--- install scripts (from registry) ---\n${report.installScripts}` : request.content;
   return {

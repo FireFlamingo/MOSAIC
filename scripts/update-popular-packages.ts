@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 const OUT = fileURLToPath(new URL('../shared/reference/popular-packages.json', import.meta.url));
 const LIMIT = 2_000;
 const NPM_SOURCE = 'https://cdn.jsdelivr.net/npm/npm-high-impact@1.13.0/lib/top-download.js';
+const NPM_HIGH_IMPACT = 'https://cdn.jsdelivr.net/npm/npm-high-impact@1.13.0/lib/top.js';
 const PYPI_SOURCE = 'https://hugovk.dev/top-pypi-packages/top-pypi-packages-30-days.min.json';
 
 async function text(url: string) {
@@ -19,6 +20,8 @@ async function text(url: string) {
 
 const npmModule = await text(NPM_SOURCE);
 const npm = [...npmModule.matchAll(/'([^']+)'/g)].map((match) => match[1]).slice(0, LIMIT);
+// The full high-impact set (by downloads and by dependents) is the lookalike reference; npm above keeps download order.
+const npmHighImpact = [...(await text(NPM_HIGH_IMPACT)).matchAll(/'([^']+)'/g)].map((match) => match[1]);
 const pypiData = JSON.parse(await text(PYPI_SOURCE)) as { last_update: string; rows: Array<{ project: string }> };
 const pypi = pypiData.rows.map((row) => row.project).slice(0, LIMIT);
 if (npm.length < LIMIT || pypi.length < LIMIT) throw new Error(`Unexpectedly short lists: npm ${npm.length}, pypi ${pypi.length}`);
@@ -28,9 +31,11 @@ await writeFile(OUT, `${JSON.stringify({
   generatedAt: new Date().toISOString(),
   sources: {
     npm: { url: NPM_SOURCE, description: 'npm-high-impact (MIT): npm packages ranked by downloads' },
+    npmHighImpact: { url: NPM_HIGH_IMPACT, description: 'npm-high-impact (MIT): every high-impact npm package (top by downloads or dependents)' },
     pypi: { url: PYPI_SOURCE, description: `top-pypi-packages by Hugo van Kemenade: PyPI projects ranked by 30-day downloads (data ${pypiData.last_update})` },
   },
   npm,
+  npmHighImpact,
   pypi,
 })}\n`, 'utf8');
-console.log(`Wrote ${npm.length} npm and ${pypi.length} PyPI names to ${OUT}`);
+console.log(`Wrote ${npm.length} ranked npm, ${npmHighImpact.length} high-impact npm and ${pypi.length} PyPI names to ${OUT}`);

@@ -39,11 +39,12 @@ export const SIGNAL_RULES = {
   'url-not-https': { label: 'Non-HTTPS URL', severity: 'medium', group: 'transport', sources: ['transport'] },
   'url-local-host': { label: 'Local or private host', severity: 'medium', group: 'transport', sources: ['ssrf'] },
   'url-invalid': { label: 'Invalid URL', severity: 'medium', group: 'transport', sources: ['ssrf'] },
+  'registry-takedown': { label: 'Removed by registry security', severity: 'high', group: 'provenance', sources: ['supplyChain'] },
+  'instruction-sensitive-action': { label: 'Directs secret access or encoded code', severity: 'high', group: 'content', sources: ['injection', 'agent'] },
   'domain-lookalike': { label: 'Lookalike domain', severity: 'medium', group: 'transport', sources: ['typosquatting'] },
   'session-correlation': { label: 'Session correlation', severity: 'low', group: 'context', sources: ['injection', 'agent'] },
   'name-correlation': { label: 'Cross-artifact name reuse', severity: 'medium', group: 'context', sources: ['injection', 'hallucination'] },
   'chain-external-instruction': { label: 'Instructed by external content', severity: 'medium', group: 'context', sources: ['injection'] },
-  'chain-local-instruction': { label: 'Instructed by local content', severity: 'low', group: 'context', sources: ['injection'] },
   'chain-external-mention': { label: 'Introduced by external content', severity: 'low', group: 'context', sources: ['injection'] },
 } as const satisfies Record<string, { label: string; severity: Severity; group: EvidenceGroup; sources: readonly ScoringSource[] }>;
 export type SignalId = keyof typeof SIGNAL_RULES;
@@ -54,6 +55,8 @@ export type SignalId = keyof typeof SIGNAL_RULES;
  * A floor only ever raises a decision; thresholds still apply above it, and policy cannot lower a floor.
  */
 export const DECISION_FLOORS: Partial<Record<SignalId, { decision: 'review' | 'deny'; reason: string }>> = {
+  'registry-takedown': { decision: 'deny', reason: 'The registry already removed this package as malicious; installing a known-malicious name is never needed.' },
+  'instruction-sensitive-action': { decision: 'review', reason: 'Instructions that send the agent after secrets or encoded code need a human decision.' },
   'metadata-missing': { decision: 'deny', reason: 'An artifact that does not exist cannot be installed as named. Allowing it lets anyone register the name later (slopsquatting).' },
   'remote-payload': { decision: 'review', reason: 'Downloaded code piped straight into a shell runs unreviewed code; a person must look before it proceeds.' },
   'instruction-override': { decision: 'review', reason: 'Text that tries to override the agent\'s instructions needs a human decision, whatever the overall score.' },

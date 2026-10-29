@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { normalizeName, packageBaseName } from '../shared/names.js';
 
 /** Reference lists of real, popular names (see shared/reference/popular-packages.json for sources and date). */
-const popular = JSON.parse(readFileSync(new URL('../shared/reference/popular-packages.json', import.meta.url), 'utf8')) as { npm: string[]; pypi: string[] };
+const popular = JSON.parse(readFileSync(new URL('../shared/reference/popular-packages.json', import.meta.url), 'utf8')) as { npm: string[]; npmHighImpact: string[]; pypi: string[] };
+const npmReference = [...new Set([...popular.npm, ...popular.npmHighImpact])];
 
 /** Reference MCP servers from the official modelcontextprotocol/servers project and widely used vendor servers. */
 const KNOWN_MCP_SERVERS = [
@@ -33,20 +34,35 @@ export function editDistance(left: string, right: string): number {
 
 const allowedDistance = (length: number) => Math.max(1, Math.floor(length * 0.2));
 
-interface ReferenceList { entries: Array<readonly [string, string]>; exact: Set<string> }
+interface ReferenceList { entries: Array<readonly [string, string]>; exact: Set<string>; byNormal: Map<string, string> }
 const reference = (names: string[]): ReferenceList => {
   const entries = names.map((name) => [name, normalizeName(name)] as const);
-  return { entries, exact: new Set(entries.map(([, normal]) => normal)) };
+  return { entries, exact: new Set(names.map((name) => name.toLowerCase())), byNormal: new Map(entries.map(([name, normal]) => [normal, name])) };
 };
-const NPM = reference(popular.npm);
+const NPM = reference(npmReference);
 const PYPI = reference(popular.pypi);
-const ANY_REGISTRY = reference([...popular.npm, ...popular.pypi]);
+const ANY_REGISTRY = reference([...npmReference, ...popular.pypi]);
 const MCP = reference(KNOWN_MCP_SERVERS);
 
-/** Returns the closest reference name the candidate imitates, or undefined. Exact matches are never lookalikes. */
+/** Prefixes and suffixes squatters add to a real name ("node-x", "x.js", "xjs"), as in the 2017 npm campaign. */
+const AFFIXES = [/^node-?/, /\.?-?js$/];
+
+/**
+ * Returns the reference name the candidate imitates, or undefined. Only an exact (case-insensitive) match is
+ * the real package; a name equal after removing punctuation ("crossenv" for "cross-env") or after adding a
+ * squatting affix ("nodemailer.js") is a lookalike, as is a small edit.
+ */
 function closest(candidate: string, list: ReferenceList): string | undefined {
+  const raw = candidate.toLowerCase();
   const normal = normalizeName(candidate);
-  if (normal.length < 4 || list.exact.has(normal)) return undefined;
+  if (list.exact.has(raw) || normal.length < 3) return undefined;
+  const punctuation = list.byNormal.get(normal);
+  if (punctuation) return punctuation;
+  for (const affix of AFFIXES) {
+    const stripped = raw.replace(affix, '');
+    if (stripped !== raw && stripped.length >= 3 && list.exact.has(stripped)) return stripped;
+  }
+  if (normal.length < 4) return undefined;
   let best: { name: string; distance: number } | undefined;
   for (const [name, reference] of list.entries) {
     if (Math.abs(reference.length - normal.length) > allowedDistance(reference.length)) continue;
@@ -76,4 +92,4 @@ export function lookalikeDomain(hostname: string): { imitates: string; how: 'nea
   return undefined;
 }
 
-export const referenceListInfo = { npm: popular.npm.length, pypi: popular.pypi.length, mcp: KNOWN_MCP_SERVERS.length, domains: KNOWN_DOMAINS.length };
+export const referenceListInfo = { npm: npmReference.length, pypi: popular.pypi.length, mcp: KNOWN_MCP_SERVERS.length, domains: KNOWN_DOMAINS.length };

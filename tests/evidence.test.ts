@@ -38,10 +38,10 @@ test('parses package specs with versions and scopes', () => {
 
 test('npm facts replace caller claims, and install scripts are scanned as content', async () => {
   const { impl } = fakeFetch({
-    'https://registry.npmjs.org/left-padx': { status: 200, body: npmDoc() },
-    'https://api.npmjs.org/downloads/point/last-week/left-padx': { status: 200, body: { downloads: 12 } },
+    'https://registry.npmjs.org/quartzline-kit': { status: 200, body: npmDoc() },
+    'https://api.npmjs.org/downloads/point/last-week/quartzline-kit': { status: 200, body: { downloads: 12 } },
   });
-  const looked = await withEvidence(pkg('left-padx', { metadata: { exists: true, signed: true, ageDays: 5000, downloads: 9e6 } }), { fetch: impl, now });
+  const looked = await withEvidence(pkg('quartzline-kit', { metadata: { exists: true, signed: true, ageDays: 5000, downloads: 9e6 } }), { fetch: impl, now });
   assert.deepEqual(looked.request.metadata, { exists: true, signed: false, ageDays: 4, downloads: 12 });
   assert.equal(looked.evidence.fields.signed?.from, 'registry');
   assert.deepEqual(looked.evidence.callerClaims, { exists: true, signed: true, ageDays: 5000, downloads: 9e6 });
@@ -60,8 +60,8 @@ test('a package npm does not have is denied even if the caller claims it exists'
 });
 
 test('an unpublished version counts as missing', async () => {
-  const { impl } = fakeFetch({ 'https://registry.npmjs.org/left-padx': { status: 200, body: npmDoc() } });
-  const looked = await withEvidence(pkg('left-padx@9.9.9'), { fetch: impl, now });
+  const { impl } = fakeFetch({ 'https://registry.npmjs.org/quartzline-kit': { status: 200, body: npmDoc() } });
+  const looked = await withEvidence(pkg('quartzline-kit@9.9.9'), { fetch: impl, now });
   assert.equal(looked.request.metadata?.exists, false);
   assert.match(looked.evidence.fields.exists!.detail!, /9\.9\.9/);
 });

@@ -12,7 +12,9 @@
     "verify:audit": "tsx scripts/verify-audit.ts",
     "bench": "tsx scripts/benchmark.ts",
     "check": "npm run test && npm run build",
-    "card": "tsx scripts/card.ts"
+    "card": "tsx scripts/card.ts",
+    "benchmark": "tsx benchmark/run.ts",
+    "benchmark:record": "tsx benchmark/record.ts"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",

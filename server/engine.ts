@@ -65,6 +65,21 @@ function deriveDecision(score: number, policy: Policy): Decision {
 
 const rank: Record<Decision, number> = { allow: 0, review: 1, deny: 2 };
 
+const SECRET_LOCATIONS = /(?:process\.env|environment variables|\.npmrc|authtoken|aws_access_key|\.aws[\\/]credentials|\.ssh[\\/]|id_rsa|id_ed25519|private[_ -]?key|api keys?|passwords?|mcp\.json)/i;
+const ENCODED_CODE = /(?:atob\s*\(|fromcharcode|base64\s*(?:-d|--decode)|eval\s*\()/i;
+
+/** Names an earlier request can be recognised by: its name, and for URLs the host labels and path segments. */
+function correlationNames(request: ArtifactRequest): string[] {
+  const names = [normalizeName(request.name)];
+  if (request.type === 'url') {
+    try {
+      const url = new URL(request.source ?? request.name);
+      for (const part of [...url.hostname.split('.'), ...url.pathname.split('/')]) names.push(normalizeName(part));
+    } catch { /* not a URL */ }
+  }
+  return names.filter((name) => name.length >= 3);
+}
+
 /** Loopback, private, link-local and unique-local addresses, plus localhost names. */
 export function isPrivateHost(value: string): boolean {
   const host = value.toLowerCase().replace(/^\[|\]$/g, '');
@@ -105,13 +120,14 @@ export function evaluateRisk(
 
   if (request.type === 'package') {
     const similar = similarPopularPackage(request.name, request.ecosystem);
-    if (similar) signals.push(signal('name-lookalike', `“${request.name}” is one small edit away from the popular package “${similar}” (a letter added, missing, changed or swapped). Similarity is a review cue, not proof of impersonation.`));
+    if (similar) signals.push(signal('name-lookalike', `“${request.name}” imitates the popular package “${similar}”: it differs only by punctuation, an added prefix or suffix, or a small edit. Similarity is a review cue, not proof of impersonation.`));
   } else if (request.type === 'mcp') {
     const similar = similarMcpServer(request.name);
     if (similar) signals.push(signal('name-lookalike', `“${request.name}” is one small edit away from the well-known MCP server “${similar}”. Similarity is a review cue, not proof of impersonation.`));
   }
 
   if (metadata) {
+    if (metadata.takenDown) signals.push(signal('registry-takedown', 'The registry replaced this package with a security holding package, which npm does after removing malware. Whoever asked for it was steered to a known-malicious name.'));
     if (metadata.signed === false) signals.push(signal('unsigned', 'Metadata reports no signature. This weak provenance cue is not a failed signature verification; legitimate artifacts can be unsigned.'));
     // No age/adoption cutoffs: the literature does not establish universal 7-day/50-download thresholds.
     const permissions = metadata.permissions ?? [];
@@ -132,6 +148,11 @@ export function evaluateRisk(
 
   if ((request.type === 'skill' || request.type === 'mcp') && /(?:ignore (?:all )?(?:previous|prior) instructions|disable (?:the )?security|bypass (?:the )?security|<important>|do not (?:tell|inform|mention|reveal)(?: this)?(?: to)? the user)/i.test(content)) {
     signals.push(signal('instruction-override', 'Static instructions attempt to override prior guidance or disable security controls. A literal text match is not a demonstrated successful prompt injection.'));
+  }
+  // In instruction files and MCP descriptions the text is a direction to the agent, so pointing it at secrets or
+  // at encoded code is far more serious than the same string inside package source.
+  if ((request.type === 'skill' || request.type === 'mcp') && (SECRET_LOCATIONS.test(content) || ENCODED_CODE.test(content))) {
+    signals.push(signal('instruction-sensitive-action', 'The instructions direct the agent to read credentials or secret files, or to run encoded code. Agents follow such text as instructions.'));
   }
 
   if (request.type === 'url') {
@@ -167,7 +188,8 @@ export function evaluateRisk(
         && (evaluation.review?.decision ?? evaluation.decision) !== 'allow',
       );
     if (recent.length) signals.push(signal('session-correlation', `${recent.length} prior non-allowed artifact(s) of a different type occurred in this session. History is one contextual cue; counts are not multiplied into attack probabilities.`));
-    const nameMatch = recent.some((evaluation) => normalizeName(evaluation.request.name) === normalizeName(request.name));
+    const mine = normalizeName(request.name);
+    const nameMatch = mine.length >= 3 && recent.some((evaluation) => correlationNames(evaluation.request).includes(mine));
     if (nameMatch) signals.push(signal('name-correlation', 'A prior non-allowed artifact of another type used the same normalized name. The stronger contextual cue replaces the generic history contribution; its severity is a CARD research hypothesis.'));
   }
 
@@ -181,7 +203,8 @@ export function evaluateRisk(
     const mention = chain.links.find((link) => link.external);
     if (chain.userRequested) { /* the user asked for it by name: explicit intent, not injection */ }
     else if (external) signals.push(signal('chain-external-instruction', `Content the agent fetched told it to get this artifact. ${quote(external)} Instructions inside fetched content are the indirect prompt-injection channel; the user did not ask for it by name.`));
-    else if (local) signals.push(signal('chain-local-instruction', `A local file or command output told the agent to get this artifact. ${quote(local)} The user did not ask for it by name.`));
+    // A local instruction (the user's own workspace files or command output) is recorded as provenance but not scored.
+    else if (local) { /* informational */ }
     else if (mention) signals.push(signal('chain-external-mention', `The artifact first appeared in content the agent fetched, not in the user's request. ${quote(mention)}`));
     if (!chain.links.length && !chain.userRequested) chain = undefined;
   }

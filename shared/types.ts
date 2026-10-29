@@ -12,7 +12,7 @@ export interface ArtifactRequest {
   ecosystem?: 'npm' | 'pypi';
   /** Which integration observed the request. Not part of the version fingerprint. */
   origin?: RequestOrigin;
-  metadata?: { exists?: boolean; ageDays?: number; downloads?: number; signed?: boolean; permissions?: string[]; resolvedAddresses?: string[] };
+  metadata?: { exists?: boolean; ageDays?: number; downloads?: number; signed?: boolean; permissions?: string[]; resolvedAddresses?: string[]; /** Registry security replaced the package (looked up, never caller-supplied). */ takenDown?: boolean };
 }
 /** Where one fact came from: looked up by CARD, typed by the caller, or not established. */
 export interface EvidenceField<T = unknown> { value?: T; from: 'registry' | 'caller' | 'unverified'; detail?: string }
@@ -25,6 +25,8 @@ export interface EvidenceReport {
   sources: string[];
   fields: Partial<Record<'exists' | 'signed' | 'ageDays' | 'downloads', EvidenceField>>;
   installScripts?: string;
+  /** The resolved version is a registry security holding package (npm "0.0.x-security"). */
+  takenDown?: boolean;
   resolvedAddresses?: string[];
   callerClaims?: Record<string, unknown>;
   note?: string;

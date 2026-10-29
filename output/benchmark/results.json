@@ -1,0 +1,1647 @@
+{
+  "corpus": {
+    "built": 435,
+    "used": 431,
+    "excluded": {
+      "not (or no longer) an npm security holding package": 3,
+      "hallucinated domain turned out to exist": 1
+    },
+    "malicious": 238,
+    "benign": 193,
+    "evidenceRecordedAt": "2026-10-29T14:58:57.159Z"
+  },
+  "policy": {
+    "reviewThreshold": 20,
+    "denyThreshold": 50,
+    "correlationEnabled": true
+  },
+  "full": {
+    "overall": {
+      "n": 431,
+      "tp": 230,
+      "fp": 19,
+      "fn": 8,
+      "tn": 174,
+      "detectionRate": 0.966,
+      "falsePositiveRate": 0.098,
+      "precision": 0.924,
+      "f1": 0.945
+    },
+    "byCategory": {
+      "attack: cross-artifact name reuse": {
+        "n": 10,
+        "tp": 10,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 10
+      },
+      "attack: documented malicious npm package": {
+        "n": 36,
+        "tp": 36,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 36
+      },
+      "attack: hallucinated domain": {
+        "n": 14,
+        "tp": 14,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 14
+      },
+      "attack: hallucinated package (npm)": {
+        "n": 30,
+        "tp": 30,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 30
+      },
+      "attack: hallucinated package (PyPI)": {
+        "n": 15,
+        "tp": 15,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 15
+      },
+      "attack: install steered by fetched content": {
+        "n": 19,
+        "tp": 19,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 19
+      },
+      "attack: internal address (SSRF)": {
+        "n": 10,
+        "tp": 10,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 10
+      },
+      "attack: lookalike domain": {
+        "n": 10,
+        "tp": 10,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 10
+      },
+      "attack: MCP rug pull (changed after trust)": {
+        "n": 5,
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 5
+      },
+      "attack: MCP tool poisoning": {
+        "n": 8,
+        "tp": 8,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 8
+      },
+      "attack: MCP tool poisoning (lookalike name)": {
+        "n": 3,
+        "tp": 3,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 3
+      },
+      "attack: MCP tool poisoning (paraphrased)": {
+        "n": 4,
+        "tp": 2,
+        "fp": 0,
+        "fn": 2,
+        "tn": 0,
+        "detectionRate": 0.5,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 0.667,
+        "flagged": 2
+      },
+      "attack: poisoned instruction file": {
+        "n": 12,
+        "tp": 12,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 12
+      },
+      "attack: poisoned instruction file (paraphrased)": {
+        "n": 8,
+        "tp": 2,
+        "fp": 0,
+        "fn": 6,
+        "tn": 0,
+        "detectionRate": 0.25,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 0.4,
+        "flagged": 2
+      },
+      "attack: typosquat (npm)": {
+        "n": 29,
+        "tp": 29,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 29
+      },
+      "attack: typosquat (PyPI)": {
+        "n": 15,
+        "tp": 15,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 15
+      },
+      "attack: unknown script piped to a shell": {
+        "n": 10,
+        "tp": 10,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 10
+      },
+      "benign: documentation URL": {
+        "n": 20,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 20,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      },
+      "benign: install listed in the project README": {
+        "n": 10,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 10,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      },
+      "benign: install suggested by a fetched docs page": {
+        "n": 10,
+        "tp": 0,
+        "fp": 10,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": null,
+        "falsePositiveRate": 1,
+        "precision": 0,
+        "f1": 0,
+        "flagged": 10
+      },
+      "benign: instruction file": {
+        "n": 20,
+        "tp": 0,
+        "fp": 1,
+        "fn": 0,
+        "tn": 19,
+        "detectionRate": null,
+        "falsePositiveRate": 0.05,
+        "precision": 0,
+        "f1": 0,
+        "flagged": 1
+      },
+      "benign: MCP server": {
+        "n": 15,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 15,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      },
+      "benign: official installer piped to a shell": {
+        "n": 8,
+        "tp": 0,
+        "fp": 8,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": null,
+        "falsePositiveRate": 1,
+        "precision": 0,
+        "f1": 0,
+        "flagged": 8
+      },
+      "benign: popular npm package": {
+        "n": 60,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 60,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      },
+      "benign: popular PyPI package": {
+        "n": 40,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 40,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      },
+      "benign: user-requested, also mentioned on a fetched page": {
+        "n": 10,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 10,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      }
+    },
+    "byType": {
+      "mcp": {
+        "n": 35,
+        "tp": 18,
+        "fp": 0,
+        "fn": 2,
+        "tn": 15,
+        "detectionRate": 0.9,
+        "falsePositiveRate": 0,
+        "precision": 1,
+        "f1": 0.947,
+        "flagged": 18
+      },
+      "package": {
+        "n": 274,
+        "tp": 144,
+        "fp": 10,
+        "fn": 0,
+        "tn": 120,
+        "detectionRate": 1,
+        "falsePositiveRate": 0.077,
+        "precision": 0.935,
+        "f1": 0.966,
+        "flagged": 154
+      },
+      "skill": {
+        "n": 50,
+        "tp": 24,
+        "fp": 1,
+        "fn": 6,
+        "tn": 19,
+        "detectionRate": 0.8,
+        "falsePositiveRate": 0.05,
+        "precision": 0.96,
+        "f1": 0.873,
+        "flagged": 25
+      },
+      "url": {
+        "n": 72,
+        "tp": 44,
+        "fp": 8,
+        "fn": 0,
+        "tn": 20,
+        "detectionRate": 1,
+        "falsePositiveRate": 0.286,
+        "precision": 0.846,
+        "f1": 0.917,
+        "flagged": 52
+      }
+    }
+  },
+  "layer1": {
+    "overall": {
+      "n": 431,
+      "tp": 220,
+      "fp": 9,
+      "fn": 18,
+      "tn": 184,
+      "detectionRate": 0.924,
+      "falsePositiveRate": 0.047,
+      "precision": 0.961,
+      "f1": 0.942
+    },
+    "byCategory": {
+      "attack: cross-artifact name reuse": {
+        "n": 10,
+        "tp": 0,
+        "fp": 0,
+        "fn": 10,
+        "tn": 0,
+        "detectionRate": 0,
+        "falsePositiveRate": null,
+        "precision": null,
+        "f1": 0,
+        "flagged": 0
+      },
+      "attack: documented malicious npm package": {
+        "n": 36,
+        "tp": 36,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 36
+      },
+      "attack: hallucinated domain": {
+        "n": 14,
+        "tp": 14,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 14
+      },
+      "attack: hallucinated package (npm)": {
+        "n": 30,
+        "tp": 30,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 30
+      },
+      "attack: hallucinated package (PyPI)": {
+        "n": 15,
+        "tp": 15,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 15
+      },
+      "attack: install steered by fetched content": {
+        "n": 19,
+        "tp": 19,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 19
+      },
+      "attack: internal address (SSRF)": {
+        "n": 10,
+        "tp": 10,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 10
+      },
+      "attack: lookalike domain": {
+        "n": 10,
+        "tp": 10,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 10
+      },
+      "attack: MCP rug pull (changed after trust)": {
+        "n": 5,
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 5
+      },
+      "attack: MCP tool poisoning": {
+        "n": 8,
+        "tp": 8,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 8
+      },
+      "attack: MCP tool poisoning (lookalike name)": {
+        "n": 3,
+        "tp": 3,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 3
+      },
+      "attack: MCP tool poisoning (paraphrased)": {
+        "n": 4,
+        "tp": 2,
+        "fp": 0,
+        "fn": 2,
+        "tn": 0,
+        "detectionRate": 0.5,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 0.667,
+        "flagged": 2
+      },
+      "attack: poisoned instruction file": {
+        "n": 12,
+        "tp": 12,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 12
+      },
+      "attack: poisoned instruction file (paraphrased)": {
+        "n": 8,
+        "tp": 2,
+        "fp": 0,
+        "fn": 6,
+        "tn": 0,
+        "detectionRate": 0.25,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 0.4,
+        "flagged": 2
+      },
+      "attack: typosquat (npm)": {
+        "n": 29,
+        "tp": 29,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 29
+      },
+      "attack: typosquat (PyPI)": {
+        "n": 15,
+        "tp": 15,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 15
+      },
+      "attack: unknown script piped to a shell": {
+        "n": 10,
+        "tp": 10,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": 1,
+        "falsePositiveRate": null,
+        "precision": 1,
+        "f1": 1,
+        "flagged": 10
+      },
+      "benign: documentation URL": {
+        "n": 20,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 20,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      },
+      "benign: install listed in the project README": {
+        "n": 10,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 10,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      },
+      "benign: install suggested by a fetched docs page": {
+        "n": 10,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 10,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      },
+      "benign: instruction file": {
+        "n": 20,
+        "tp": 0,
+        "fp": 1,
+        "fn": 0,
+        "tn": 19,
+        "detectionRate": null,
+        "falsePositiveRate": 0.05,
+        "precision": 0,
+        "f1": 0,
+        "flagged": 1
+      },
+      "benign: MCP server": {
+        "n": 15,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 15,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      },
+      "benign: official installer piped to a shell": {
+        "n": 8,
+        "tp": 0,
+        "fp": 8,
+        "fn": 0,
+        "tn": 0,
+        "detectionRate": null,
+        "falsePositiveRate": 1,
+        "precision": 0,
+        "f1": 0,
+        "flagged": 8
+      },
+      "benign: popular npm package": {
+        "n": 60,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 60,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      },
+      "benign: popular PyPI package": {
+        "n": 40,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 40,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      },
+      "benign: user-requested, also mentioned on a fetched page": {
+        "n": 10,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 10,
+        "detectionRate": null,
+        "falsePositiveRate": 0,
+        "precision": null,
+        "f1": null,
+        "flagged": 0
+      }
+    }
+  },
+  "ablation": {
+    "note": "Layer 1 = correlation and chain analysis off. Rows list scenarios whose outcome differs between configurations.",
+    "changed": [
+      {
+        "id": "B9-1",
+        "category": "benign: install suggested by a fetched docs page",
+        "label": "benign",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "B9-2",
+        "category": "benign: install suggested by a fetched docs page",
+        "label": "benign",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "B9-3",
+        "category": "benign: install suggested by a fetched docs page",
+        "label": "benign",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "B9-4",
+        "category": "benign: install suggested by a fetched docs page",
+        "label": "benign",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "B9-5",
+        "category": "benign: install suggested by a fetched docs page",
+        "label": "benign",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "B9-6",
+        "category": "benign: install suggested by a fetched docs page",
+        "label": "benign",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "B9-7",
+        "category": "benign: install suggested by a fetched docs page",
+        "label": "benign",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "B9-8",
+        "category": "benign: install suggested by a fetched docs page",
+        "label": "benign",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "B9-9",
+        "category": "benign: install suggested by a fetched docs page",
+        "label": "benign",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "B9-10",
+        "category": "benign: install suggested by a fetched docs page",
+        "label": "benign",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "A12-1",
+        "category": "attack: cross-artifact name reuse",
+        "label": "malicious",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "A12-2",
+        "category": "attack: cross-artifact name reuse",
+        "label": "malicious",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "A12-3",
+        "category": "attack: cross-artifact name reuse",
+        "label": "malicious",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "A12-4",
+        "category": "attack: cross-artifact name reuse",
+        "label": "malicious",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "A12-5",
+        "category": "attack: cross-artifact name reuse",
+        "label": "malicious",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "A12-6",
+        "category": "attack: cross-artifact name reuse",
+        "label": "malicious",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "A12-7",
+        "category": "attack: cross-artifact name reuse",
+        "label": "malicious",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "A12-8",
+        "category": "attack: cross-artifact name reuse",
+        "label": "malicious",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "A12-9",
+        "category": "attack: cross-artifact name reuse",
+        "label": "malicious",
+        "layer1": false,
+        "full": true
+      },
+      {
+        "id": "A12-10",
+        "category": "attack: cross-artifact name reuse",
+        "label": "malicious",
+        "layer1": false,
+        "full": true
+      }
+    ]
+  },
+  "thresholds": {
+    "method": "Review threshold chosen on the train split by Youden J (detection rate minus false-positive rate), ties broken toward the default 20; reported on the held-out test split.",
+    "trainSize": 211,
+    "testSize": 220,
+    "chosen": 30,
+    "testAtDefault": {
+      "n": 220,
+      "tp": 108,
+      "fp": 10,
+      "fn": 3,
+      "tn": 99,
+      "detectionRate": 0.973,
+      "falsePositiveRate": 0.092,
+      "precision": 0.915,
+      "f1": 0.943
+    },
+    "testAtChosen": {
+      "n": 220,
+      "tp": 100,
+      "fp": 3,
+      "fn": 11,
+      "tn": 106,
+      "detectionRate": 0.901,
+      "falsePositiveRate": 0.028,
+      "precision": 0.971,
+      "f1": 0.935
+    },
+    "curve": [
+      {
+        "threshold": 0,
+        "train": {
+          "n": 211,
+          "tp": 127,
+          "fp": 84,
+          "fn": 0,
+          "tn": 0,
+          "detectionRate": 1,
+          "falsePositiveRate": 1,
+          "precision": 0.602,
+          "f1": 0.751
+        },
+        "test": {
+          "n": 220,
+          "tp": 111,
+          "fp": 109,
+          "fn": 0,
+          "tn": 0,
+          "detectionRate": 1,
+          "falsePositiveRate": 1,
+          "precision": 0.505,
+          "f1": 0.671
+        }
+      },
+      {
+        "threshold": 5,
+        "train": {
+          "n": 211,
+          "tp": 122,
+          "fp": 37,
+          "fn": 5,
+          "tn": 47,
+          "detectionRate": 0.961,
+          "falsePositiveRate": 0.44,
+          "precision": 0.767,
+          "f1": 0.853
+        },
+        "test": {
+          "n": 220,
+          "tp": 108,
+          "fp": 45,
+          "fn": 3,
+          "tn": 64,
+          "detectionRate": 0.973,
+          "falsePositiveRate": 0.413,
+          "precision": 0.706,
+          "f1": 0.818
+        }
+      },
+      {
+        "threshold": 10,
+        "train": {
+          "n": 211,
+          "tp": 122,
+          "fp": 37,
+          "fn": 5,
+          "tn": 47,
+          "detectionRate": 0.961,
+          "falsePositiveRate": 0.44,
+          "precision": 0.767,
+          "f1": 0.853
+        },
+        "test": {
+          "n": 220,
+          "tp": 108,
+          "fp": 45,
+          "fn": 3,
+          "tn": 64,
+          "detectionRate": 0.973,
+          "falsePositiveRate": 0.413,
+          "precision": 0.706,
+          "f1": 0.818
+        }
+      },
+      {
+        "threshold": 15,
+        "train": {
+          "n": 211,
+          "tp": 122,
+          "fp": 9,
+          "fn": 5,
+          "tn": 75,
+          "detectionRate": 0.961,
+          "falsePositiveRate": 0.107,
+          "precision": 0.931,
+          "f1": 0.946
+        },
+        "test": {
+          "n": 220,
+          "tp": 108,
+          "fp": 10,
+          "fn": 3,
+          "tn": 99,
+          "detectionRate": 0.973,
+          "falsePositiveRate": 0.092,
+          "precision": 0.915,
+          "f1": 0.943
+        }
+      },
+      {
+        "threshold": 20,
+        "train": {
+          "n": 211,
+          "tp": 122,
+          "fp": 9,
+          "fn": 5,
+          "tn": 75,
+          "detectionRate": 0.961,
+          "falsePositiveRate": 0.107,
+          "precision": 0.931,
+          "f1": 0.946
+        },
+        "test": {
+          "n": 220,
+          "tp": 108,
+          "fp": 10,
+          "fn": 3,
+          "tn": 99,
+          "detectionRate": 0.973,
+          "falsePositiveRate": 0.092,
+          "precision": 0.915,
+          "f1": 0.943
+        }
+      },
+      {
+        "threshold": 25,
+        "train": {
+          "n": 211,
+          "tp": 115,
+          "fp": 6,
+          "fn": 12,
+          "tn": 78,
+          "detectionRate": 0.906,
+          "falsePositiveRate": 0.071,
+          "precision": 0.95,
+          "f1": 0.927
+        },
+        "test": {
+          "n": 220,
+          "tp": 101,
+          "fp": 9,
+          "fn": 10,
+          "tn": 100,
+          "detectionRate": 0.91,
+          "falsePositiveRate": 0.083,
+          "precision": 0.918,
+          "f1": 0.914
+        }
+      },
+      {
+        "threshold": 30,
+        "train": {
+          "n": 211,
+          "tp": 115,
+          "fp": 4,
+          "fn": 12,
+          "tn": 80,
+          "detectionRate": 0.906,
+          "falsePositiveRate": 0.048,
+          "precision": 0.966,
+          "f1": 0.935
+        },
+        "test": {
+          "n": 220,
+          "tp": 100,
+          "fp": 3,
+          "fn": 11,
+          "tn": 106,
+          "detectionRate": 0.901,
+          "falsePositiveRate": 0.028,
+          "precision": 0.971,
+          "f1": 0.935
+        }
+      },
+      {
+        "threshold": 35,
+        "train": {
+          "n": 211,
+          "tp": 101,
+          "fp": 0,
+          "fn": 26,
+          "tn": 84,
+          "detectionRate": 0.795,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.886
+        },
+        "test": {
+          "n": 220,
+          "tp": 90,
+          "fp": 0,
+          "fn": 21,
+          "tn": 109,
+          "detectionRate": 0.811,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.896
+        }
+      },
+      {
+        "threshold": 40,
+        "train": {
+          "n": 211,
+          "tp": 101,
+          "fp": 0,
+          "fn": 26,
+          "tn": 84,
+          "detectionRate": 0.795,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.886
+        },
+        "test": {
+          "n": 220,
+          "tp": 90,
+          "fp": 0,
+          "fn": 21,
+          "tn": 109,
+          "detectionRate": 0.811,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.896
+        }
+      },
+      {
+        "threshold": 45,
+        "train": {
+          "n": 211,
+          "tp": 101,
+          "fp": 0,
+          "fn": 26,
+          "tn": 84,
+          "detectionRate": 0.795,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.886
+        },
+        "test": {
+          "n": 220,
+          "tp": 90,
+          "fp": 0,
+          "fn": 21,
+          "tn": 109,
+          "detectionRate": 0.811,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.896
+        }
+      },
+      {
+        "threshold": 50,
+        "train": {
+          "n": 211,
+          "tp": 101,
+          "fp": 0,
+          "fn": 26,
+          "tn": 84,
+          "detectionRate": 0.795,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.886
+        },
+        "test": {
+          "n": 220,
+          "tp": 90,
+          "fp": 0,
+          "fn": 21,
+          "tn": 109,
+          "detectionRate": 0.811,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.896
+        }
+      },
+      {
+        "threshold": 55,
+        "train": {
+          "n": 211,
+          "tp": 88,
+          "fp": 0,
+          "fn": 39,
+          "tn": 84,
+          "detectionRate": 0.693,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.819
+        },
+        "test": {
+          "n": 220,
+          "tp": 75,
+          "fp": 0,
+          "fn": 36,
+          "tn": 109,
+          "detectionRate": 0.676,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.806
+        }
+      },
+      {
+        "threshold": 60,
+        "train": {
+          "n": 211,
+          "tp": 88,
+          "fp": 0,
+          "fn": 39,
+          "tn": 84,
+          "detectionRate": 0.693,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.819
+        },
+        "test": {
+          "n": 220,
+          "tp": 75,
+          "fp": 0,
+          "fn": 36,
+          "tn": 109,
+          "detectionRate": 0.676,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.806
+        }
+      },
+      {
+        "threshold": 65,
+        "train": {
+          "n": 211,
+          "tp": 88,
+          "fp": 0,
+          "fn": 39,
+          "tn": 84,
+          "detectionRate": 0.693,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.819
+        },
+        "test": {
+          "n": 220,
+          "tp": 75,
+          "fp": 0,
+          "fn": 36,
+          "tn": 109,
+          "detectionRate": 0.676,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.806
+        }
+      },
+      {
+        "threshold": 70,
+        "train": {
+          "n": 211,
+          "tp": 88,
+          "fp": 0,
+          "fn": 39,
+          "tn": 84,
+          "detectionRate": 0.693,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.819
+        },
+        "test": {
+          "n": 220,
+          "tp": 74,
+          "fp": 0,
+          "fn": 37,
+          "tn": 109,
+          "detectionRate": 0.667,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.8
+        }
+      },
+      {
+        "threshold": 75,
+        "train": {
+          "n": 211,
+          "tp": 88,
+          "fp": 0,
+          "fn": 39,
+          "tn": 84,
+          "detectionRate": 0.693,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.819
+        },
+        "test": {
+          "n": 220,
+          "tp": 74,
+          "fp": 0,
+          "fn": 37,
+          "tn": 109,
+          "detectionRate": 0.667,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.8
+        }
+      },
+      {
+        "threshold": 80,
+        "train": {
+          "n": 211,
+          "tp": 88,
+          "fp": 0,
+          "fn": 39,
+          "tn": 84,
+          "detectionRate": 0.693,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.819
+        },
+        "test": {
+          "n": 220,
+          "tp": 74,
+          "fp": 0,
+          "fn": 37,
+          "tn": 109,
+          "detectionRate": 0.667,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.8
+        }
+      },
+      {
+        "threshold": 85,
+        "train": {
+          "n": 211,
+          "tp": 88,
+          "fp": 0,
+          "fn": 39,
+          "tn": 84,
+          "detectionRate": 0.693,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.819
+        },
+        "test": {
+          "n": 220,
+          "tp": 74,
+          "fp": 0,
+          "fn": 37,
+          "tn": 109,
+          "detectionRate": 0.667,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.8
+        }
+      },
+      {
+        "threshold": 90,
+        "train": {
+          "n": 211,
+          "tp": 88,
+          "fp": 0,
+          "fn": 39,
+          "tn": 84,
+          "detectionRate": 0.693,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.819
+        },
+        "test": {
+          "n": 220,
+          "tp": 74,
+          "fp": 0,
+          "fn": 37,
+          "tn": 109,
+          "detectionRate": 0.667,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.8
+        }
+      },
+      {
+        "threshold": 95,
+        "train": {
+          "n": 211,
+          "tp": 88,
+          "fp": 0,
+          "fn": 39,
+          "tn": 84,
+          "detectionRate": 0.693,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.819
+        },
+        "test": {
+          "n": 220,
+          "tp": 74,
+          "fp": 0,
+          "fn": 37,
+          "tn": 109,
+          "detectionRate": 0.667,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.8
+        }
+      },
+      {
+        "threshold": 100,
+        "train": {
+          "n": 211,
+          "tp": 88,
+          "fp": 0,
+          "fn": 39,
+          "tn": 84,
+          "detectionRate": 0.693,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.819
+        },
+        "test": {
+          "n": 220,
+          "tp": 74,
+          "fp": 0,
+          "fn": 37,
+          "tn": 109,
+          "detectionRate": 0.667,
+          "falsePositiveRate": 0,
+          "precision": 1,
+          "f1": 0.8
+        }
+      }
+    ]
+  },
+  "confidenceCalibration": {
+    "low": {
+      "n": 39,
+      "correct": 38,
+      "accuracy": 0.974
+    },
+    "medium": {
+      "n": 80,
+      "correct": 68,
+      "accuracy": 0.85
+    },
+    "high": {
+      "n": 312,
+      "correct": 298,
+      "accuracy": 0.955
+    }
+  },
+  "misses": [
+    {
+      "id": "A8-13",
+      "category": "attack: poisoned instruction file (paraphrased)",
+      "score": 0
+    },
+    {
+      "id": "A8-15",
+      "category": "attack: poisoned instruction file (paraphrased)",
+      "score": 0
+    },
+    {
+      "id": "A8-16",
+      "category": "attack: poisoned instruction file (paraphrased)",
+      "score": 0
+    },
+    {
+      "id": "A8-18",
+      "category": "attack: poisoned instruction file (paraphrased)",
+      "score": 0
+    },
+    {
+      "id": "A8-19",
+      "category": "attack: poisoned instruction file (paraphrased)",
+      "score": 0
+    },
+    {
+      "id": "A8-20",
+      "category": "attack: poisoned instruction file (paraphrased)",
+      "score": 0
+    },
+    {
+      "id": "A9-10",
+      "category": "attack: MCP tool poisoning (paraphrased)",
+      "score": 0
+    },
+    {
+      "id": "A9-11",
+      "category": "attack: MCP tool poisoning (paraphrased)",
+      "score": 0
+    }
+  ],
+  "falseAlarms": [
+    {
+      "id": "B4-6",
+      "category": "benign: instruction file",
+      "score": 30,
+      "signals": [
+        "instruction-sensitive-action"
+      ]
+    },
+    {
+      "id": "B8-1",
+      "category": "benign: official installer piped to a shell",
+      "score": 25,
+      "signals": [
+        "remote-payload"
+      ]
+    },
+    {
+      "id": "B8-2",
+      "category": "benign: official installer piped to a shell",
+      "score": 25,
+      "signals": [
+        "remote-payload"
+      ]
+    },
+    {
+      "id": "B8-3",
+      "category": "benign: official installer piped to a shell",
+      "score": 25,
+      "signals": [
+        "remote-payload"
+      ]
+    },
+    {
+      "id": "B8-4",
+      "category": "benign: official installer piped to a shell",
+      "score": 25,
+      "signals": [
+        "remote-payload"
+      ]
+    },
+    {
+      "id": "B8-5",
+      "category": "benign: official installer piped to a shell",
+      "score": 25,
+      "signals": [
+        "remote-payload"
+      ]
+    },
+    {
+      "id": "B8-6",
+      "category": "benign: official installer piped to a shell",
+      "score": 25,
+      "signals": [
+        "remote-payload"
+      ]
+    },
+    {
+      "id": "B8-7",
+      "category": "benign: official installer piped to a shell",
+      "score": 25,
+      "signals": [
+        "remote-payload"
+      ]
+    },
+    {
+      "id": "B8-8",
+      "category": "benign: official installer piped to a shell",
+      "score": 25,
+      "signals": [
+        "remote-payload"
+      ]
+    },
+    {
+      "id": "B9-1",
+      "category": "benign: install suggested by a fetched docs page",
+      "score": 30,
+      "signals": [
+        "chain-external-instruction",
+        "unsigned"
+      ]
+    },
+    {
+      "id": "B9-2",
+      "category": "benign: install suggested by a fetched docs page",
+      "score": 20,
+      "signals": [
+        "chain-external-instruction"
+      ]
+    },
+    {
+      "id": "B9-3",
+      "category": "benign: install suggested by a fetched docs page",
+      "score": 20,
+      "signals": [
+        "chain-external-instruction"
+      ]
+    },
+    {
+      "id": "B9-4",
+      "category": "benign: install suggested by a fetched docs page",
+      "score": 30,
+      "signals": [
+        "chain-external-instruction",
+        "unsigned"
+      ]
+    },
+    {
+      "id": "B9-5",
+      "category": "benign: install suggested by a fetched docs page",
+      "score": 20,
+      "signals": [
+        "chain-external-instruction"
+      ]
+    },
+    {
+      "id": "B9-6",
+      "category": "benign: install suggested by a fetched docs page",
+      "score": 20,
+      "signals": [
+        "chain-external-instruction"
+      ]
+    },
+    {
+      "id": "B9-7",
+      "category": "benign: install suggested by a fetched docs page",
+      "score": 30,
+      "signals": [
+        "chain-external-instruction",
+        "unsigned"
+      ]
+    },
+    {
+      "id": "B9-8",
+      "category": "benign: install suggested by a fetched docs page",
+      "score": 30,
+      "signals": [
+        "chain-external-instruction",
+        "unsigned"
+      ]
+    },
+    {
+      "id": "B9-9",
+      "category": "benign: install suggested by a fetched docs page",
+      "score": 30,
+      "signals": [
+        "chain-external-instruction",
+        "unsigned"
+      ]
+    },
+    {
+      "id": "B9-10",
+      "category": "benign: install suggested by a fetched docs page",
+      "score": 30,
+      "signals": [
+        "chain-external-instruction",
+        "unsigned"
+      ]
+    }
+  ],
+  "timing": {
+    "note": "Wall time per evaluation including recorded-evidence replay; varies by machine and is excluded from the reproducibility hash.",
+    "p50Ms": 1.36,
+    "p95Ms": 278.01
+  },
+  "resultsHash": "24dd02bd555adc9dda45edaf3e07b95d329353b135cc39772416148e232de908"
+}

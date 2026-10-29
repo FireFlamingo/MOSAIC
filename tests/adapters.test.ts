@@ -129,12 +129,12 @@ test('allow, deny with a readable reason, and fail closed when CARD is unreachab
 
 test('a held request waits for the human: approve proceeds, deny blocks, silence times out as deny', async () => {
   const approved = fakeCard({ evaluate: [{ id: 'h1', decision: 'review' }], later: { h1: { id: 'h1', decision: 'review', review: { decision: 'allow', note: 'ok', timestamp: '', reviewer: 'Ayush' } } } });
-  assert.deepEqual(await onPreToolUse(install('npm install left-padx'), 'claude', approved.deps), { allow: true });
+  assert.deepEqual(await onPreToolUse(install('npm install quartzline-kit'), 'claude', approved.deps), { allow: true });
   const rejected = fakeCard({ evaluate: [{ id: 'h2', decision: 'review' }], later: { h2: { id: 'h2', decision: 'review', review: { decision: 'deny', note: 'not ours', timestamp: '', reviewer: 'Ayush' } } } });
-  const no = await onPreToolUse(install('npm install left-padx'), 'claude', rejected.deps);
+  const no = await onPreToolUse(install('npm install quartzline-kit'), 'claude', rejected.deps);
   assert.match((no as { reason: string }).reason, /Reviewer Ayush decided: not ours/);
   const silent = fakeCard({ evaluate: [{ id: 'h3', decision: 'review' }] });
-  const timeout = await onPreToolUse(install('npm install left-padx'), 'claude', silent.deps);
+  const timeout = await onPreToolUse(install('npm install quartzline-kit'), 'claude', silent.deps);
   assert.equal(timeout.allow, false);
   assert.match((timeout as { reason: string }).reason, /nobody decided within 5 seconds/);
   assert.ok(silent.elapsed() >= 5_000);
