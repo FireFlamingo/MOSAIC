@@ -8,7 +8,22 @@ export interface ArtifactRequest {
   content?: string;
   /** Package registry, when known. Without it, package names are compared against every registry's reference list. */
   ecosystem?: 'npm' | 'pypi';
-  metadata?: { exists?: boolean; ageDays?: number; downloads?: number; signed?: boolean; permissions?: string[] };
+  metadata?: { exists?: boolean; ageDays?: number; downloads?: number; signed?: boolean; permissions?: string[]; resolvedAddresses?: string[] };
+}
+/** Where one fact came from: looked up by CARD, typed by the caller, or not established. */
+export interface EvidenceField<T = unknown> { value?: T; from: 'registry' | 'caller' | 'unverified'; detail?: string }
+export interface EvidenceReport {
+  mode: 'live' | 'caller';
+  registry?: 'npm' | 'pypi';
+  lookedUp: string;
+  version?: string;
+  fetchedAt: string;
+  sources: string[];
+  fields: Partial<Record<'exists' | 'signed' | 'ageDays' | 'downloads', EvidenceField>>;
+  installScripts?: string;
+  resolvedAddresses?: string[];
+  callerClaims?: Record<string, unknown>;
+  note?: string;
 }
 export interface Signal {
   id: string; label: string; score: number; weight: number; reason: string;
@@ -64,6 +79,8 @@ export interface Evaluation {
   scoringBreakdown?: ScoringBreakdown;
   /** Decision from the score and thresholds alone. Absent on records made before decision memory existed. */
   ruleDecision?: Decision;
+  /** How the facts behind the score were obtained. Absent on records made before evidence lookups existed. */
+  evidence?: EvidenceReport;
   /** Set when a single critical finding raised the threshold decision. */
   decisionFloor?: DecisionFloor;
   fingerprint?: string;

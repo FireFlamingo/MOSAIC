@@ -7,6 +7,7 @@ import type { ArtifactRequest, Evaluation, FeedbackReason, Policy } from '../sha
 import { DEFAULT_TRUST_DAYS, FEEDBACK_REASONS, TRUST_EXPIRY_DAYS } from '../shared/feedback.js';
 import { defaultPolicy, evaluateRisk } from './engine.js';
 import { scenarioById, scenarios } from './scenarios.js';
+import { withEvidence } from './evidence.js';
 import { StateStore, type ReviewInput } from './store.js';
 
 const TYPES = new Set(['package', 'skill', 'mcp', 'url']);
@@ -115,7 +116,16 @@ export async function createApp(options: AppOptions = {}): Promise<CardApp> {
   app.get('/api/state', (_req, res) => res.json(store.appState()));
   app.get('/api/export', (_req, res) => res.type('application/json').send(store.exportAudit()));
   app.post('/api/evaluate', async (req, res, next) => {
-    try { const request = validateRequest(req.body); if (!request) return res.status(400).json({ error: 'Invalid artifact request' }); return res.status(201).json(await evaluate(store, request)); } catch (error) { next(error); }
+    try {
+      const request = validateRequest(req.body);
+      if (!request) return res.status(400).json({ error: 'Invalid artifact request' });
+      if (req.body.evidence !== undefined && req.body.evidence !== 'live' && req.body.evidence !== 'caller') return res.status(400).json({ error: 'evidence must be "live" or "caller"' });
+      if (req.body.evidence === 'live') {
+        const looked = await withEvidence(request, { cache: store.evidenceCache });
+        return res.status(201).json(await store.evaluate(looked.request, evaluateRisk, undefined, looked.evidence));
+      }
+      return res.status(201).json(await evaluate(store, request));
+    } catch (error) { next(error); }
   });
   app.patch('/api/policy', async (req, res, next) => {
     try { const policy = validatePolicy(req.body); if (!policy) return res.status(400).json({ error: 'Invalid policy thresholds' }); return res.json(await store.setPolicy(policy)); } catch (error) { next(error); }

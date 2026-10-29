@@ -64,6 +64,15 @@ function deriveDecision(score: number, policy: Policy): Decision {
 
 const rank: Record<Decision, number> = { allow: 0, review: 1, deny: 2 };
 
+/** Loopback, private, link-local and unique-local addresses, plus localhost names. */
+export function isPrivateHost(value: string): boolean {
+  const host = value.toLowerCase().replace(/^\[|\]$/g, '');
+  return host === 'localhost' || host.endsWith('.localhost') || host === '::1' || host === '0.0.0.0'
+    || /^127(?:\.\d{1,3}){3}$/.test(host) || /^10(?:\.\d{1,3}){3}$/.test(host) || /^192\.168(?:\.\d{1,3}){2}$/.test(host)
+    || /^169\.254(?:\.\d{1,3}){2}$/.test(host) || /^172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}$/.test(host)
+    || /^f[cd][0-9a-f:]*$/i.test(host) || /^fe[89ab][0-9a-f:]*$/i.test(host);
+}
+
 /** The strongest floor among the signals that fired, if it is stricter than the threshold decision. */
 function decisionFloor(signals: Signal[], thresholdDecision: Decision): DecisionFloor | undefined {
   let strongest: DecisionFloor | undefined;
@@ -129,8 +138,11 @@ export function evaluateRisk(
       const parsed = new URL(candidate);
       if (parsed.protocol !== 'https:') signals.push(signal('url-not-https', `URL uses ${parsed.protocol || 'an unknown'} protocol rather than HTTPS. Transport protection is not established by this URL.`));
       const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
-      if (host === 'localhost' || host.endsWith('.localhost') || host === '::1' || /^127(?:\.\d{1,3}){3}$/.test(host) || /^10(?:\.\d{1,3}){3}$/.test(host) || /^192\.168(?:\.\d{1,3}){2}$/.test(host) || /^169\.254(?:\.\d{1,3}){2}$/.test(host) || /^172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}$/.test(host) || /^f[cd][0-9a-f:]*$/i.test(host) || /^fe[89ab][0-9a-f:]*$/i.test(host)) {
+      const privateAddress = (metadata?.resolvedAddresses ?? []).find(isPrivateHost);
+      if (isPrivateHost(host)) {
         signals.push(signal('url-local-host', 'URL names a local or private network host. This can cross a network trust boundary; approved internal services can also be legitimate.'));
+      } else if (privateAddress) {
+        signals.push(signal('url-local-host', `“${host}” is a public-looking name that resolves to the private address ${privateAddress}. This is how server-side request forgery and DNS rebinding reach internal systems.`));
       } else if (!/^[\d.]+$/.test(host) && !host.includes(':')) {
         const lookalike = lookalikeDomain(host);
         if (lookalike) signals.push(signal('domain-lookalike', lookalike.how === 'subdomain'

@@ -274,10 +274,10 @@ export default function App() {
       setNotice("Audit export prepared.");
     }
   }
-  async function submit(request: ArtifactRequest) {
+  async function submit(request: ArtifactRequest, live: boolean) {
     const result = await api<Evaluation>("/api/evaluate", {
       method: "POST",
-      body: JSON.stringify(request),
+      body: JSON.stringify(live ? { ...request, evidence: "live" } : request),
     });
     if (result) {
       addEvaluations([result]);

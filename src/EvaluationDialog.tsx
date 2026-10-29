@@ -19,6 +19,7 @@ import type {
 import { EVIDENCE_GROUPS, SCORING_SOURCES, SCORING_VERSION, signalContribution } from "../shared/scoring";
 import { ruleDecisionOf } from "../shared/feedback";
 import { FeedbackPanel, FeedbackResult, MemoryNotice, type ReviewSubmission } from "./Feedback";
+import { EvidencePanel } from "./Evidence";
 import {
   ArtifactIcon,
   Badge,
@@ -39,7 +40,7 @@ interface Props {
   onReconnect: () => Promise<void>;
   onClose: () => void;
   onReview: (input: ReviewSubmission) => Promise<void>;
-  onSubmit: (request: ArtifactRequest) => Promise<void>;
+  onSubmit: (request: ArtifactRequest, live: boolean) => Promise<void>;
   rules: MemoryRule[];
 }
 export function EvaluationDialog({
@@ -108,7 +109,7 @@ export function EvaluationDialog({
         signed: flag("signed"),
         permissions: form.getAll("permission") as string[],
       },
-    });
+    }, form.get("live") === "on");
   }
   return (
     <div
@@ -245,6 +246,7 @@ export function EvaluationDialog({
                 </div>
               )}
             </div>
+            {selected.evidence && <EvidencePanel evidence={selected.evidence} />}
             <div className="inspector-section">
               <h3>Request context</h3>
               <dl className="request-context">
@@ -359,9 +361,16 @@ export function EvaluationDialog({
                   />
                 </label>
               </div>
+              <label className="live-evidence-option">
+                <input type="checkbox" name="live" />
+                <span>
+                  Look up real data
+                  <small>CARD checks npm, PyPI or DNS itself and ignores the values below for anything it can check. Packages need a registry.</small>
+                </span>
+              </label>
               <div className="evidence-heading">
                 <span>SUPPLIED EVIDENCE</span>
-                <small>Reported by you · not independently verified</small>
+                <small>Typed by you · used only when real data is not looked up</small>
               </div>
               <div className="form-columns">
                 <label className="form-field">

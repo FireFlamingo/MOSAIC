@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
-import type { AppState, ArtifactRequest, Decision, Evaluation, FeedbackReason, HumanReview, MemoryRule, Policy, RuleRevocationCause, Scenario, Signal, ScoringBreakdown } from '../shared/types.js';
+import type { AppState, ArtifactRequest, Decision, Evaluation, EvidenceReport, FeedbackReason, HumanReview, MemoryRule, Policy, RuleRevocationCause, Scenario, Signal, ScoringBreakdown } from '../shared/types.js';
 import { defaultPolicy } from './engine.js';
 import { SCORING_VERSION } from '../shared/scoring.js';
 import { highSeveritySignals, ruleStatus } from '../shared/feedback.js';
@@ -75,6 +75,17 @@ export class StateStore {
 
   close() { this.db?.close(); }
 
+  /** Registry lookups are cached so repeated installs do not hit the network; not part of the audit log. */
+  readonly evidenceCache = {
+    get: (key: string): EvidenceReport | undefined => {
+      const row = this.db.get('SELECT body FROM evidence_cache WHERE key = ?', key);
+      return row ? JSON.parse(row.body as string) as EvidenceReport : undefined;
+    },
+    set: (key: string, value: EvidenceReport) => {
+      this.db.run('INSERT OR REPLACE INTO evidence_cache (key, fetched_at, body) VALUES (?, ?, ?)', key, Date.parse(value.fetchedAt), JSON.stringify(value));
+    },
+  };
+
   appState(): AppState {
     return { evaluations: structuredClone(this.evaluations), policy: { ...this.currentPolicy }, scenarios: structuredClone(this.scenarios), rules: structuredClone(this.rules) };
   }
@@ -110,6 +121,7 @@ export class StateStore {
     request: ArtifactRequest,
     assess: (request: ArtifactRequest, history: Evaluation[], policy: Policy) => { score: number; decision: Decision; signals: Signal[]; scoringVersion?: string; policySnapshot?: Policy; scoringBreakdown?: ScoringBreakdown },
     now: Date = new Date(),
+    evidence?: EvidenceReport,
   ): Promise<Evaluation> {
     return this.transact(() => {
       const started = performance.now();
@@ -120,7 +132,7 @@ export class StateStore {
       const { decision, memory } = applyMemory({ request, fingerprint, signals: result.signals, ruleDecision: result.decision, rules: this.rules, now });
       // ruleDecision, fingerprint and memory sit inside the hashed receipt, so editing which rule applied is detectable.
       return this.appendUnsafe({
-        request, ...result, ruleDecision: result.decision, decision, fingerprint, ...(memory ? { memory } : {}),
+        request, ...result, ruleDecision: result.decision, decision, fingerprint, ...(memory ? { memory } : {}), ...(evidence ? { evidence } : {}),
         durationMs: Math.max(1, Math.round(performance.now() - started)),
       });
     });
