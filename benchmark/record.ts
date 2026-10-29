@@ -8,10 +8,11 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withEvidence } from '../server/evidence.js';
-import { buildScenarios } from './corpus.js';
+import { buildHoldout, buildScenarios } from './corpus.js';
 import type { ArtifactRequest } from '../shared/types.js';
 
-export const RECORDING = fileURLToPath(new URL('./recordings/evidence.json', import.meta.url));
+const HOLDOUT = process.argv.includes('--holdout');
+export const RECORDING = fileURLToPath(new URL(HOLDOUT ? './recordings/holdout-evidence.json' : './recordings/evidence.json', import.meta.url));
 export interface Recording { recordedAt: string; http: Record<string, { status: number; body?: unknown }>; dns: Record<string, { addresses?: string[]; code?: string }> }
 
 const INSTALL_SCRIPTS = ['preinstall', 'install', 'postinstall'];
@@ -63,7 +64,7 @@ async function main() {
     }
   };
   const requests = new Map<string, Omit<ArtifactRequest, 'sessionId'>>();
-  for (const scenario of buildScenarios()) {
+  for (const scenario of HOLDOUT ? buildHoldout() : buildScenarios()) {
     for (const event of scenario.events) {
       if ('request' in event && (event.request.type === 'package' || event.request.type === 'url')) requests.set(JSON.stringify([event.request.type, event.request.ecosystem, event.request.name, event.request.source]), event.request);
     }

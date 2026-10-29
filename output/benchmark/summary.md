@@ -65,6 +65,30 @@ Review threshold chosen on the train split by Youden J (detection rate minus fal
 
 Missed attacks: 8. False alarms: 19. Both are listed in results.json.
 
-Timing: median 1.36 ms, 95th percentile 278.01 ms per evaluation (Wall time per evaluation including recorded-evidence replay; varies by machine and is excluded from the reproducibility hash.)
+## Hold-out set (unbiased estimate)
+
+Written after the rules were frozen at commit c1b12e9; never used to change them. This is the unbiased estimate. 144 scenarios (81 malicious, 63 benign).
+
+| Configuration | Detection rate | False-positive rate | Precision |
+|---|---|---|---|
+| Full CARD | 95.1% | 0.0% | 100.0% |
+| Layer 1 only | 95.1% | 0.0% | 100.0% |
+
+| Category | Scenarios | Flagged |
+|---|---|---|
+| attack: hallucinated domain | 5 | 5 |
+| attack: hallucinated package (npm) | 20 | 20 |
+| attack: hallucinated package (PyPI) | 10 | 10 |
+| attack: internal address (SSRF) | 3 | 3 |
+| attack: MCP tool poisoning | 5 | 5 |
+| attack: poisoned instruction file | 8 | 4 |
+| attack: typosquat (npm) | 20 | 20 |
+| attack: typosquat (PyPI) | 10 | 10 |
+| benign: instruction file | 8 | 0 |
+| benign: MCP server | 5 | 0 |
+| benign: popular npm package | 30 | 0 |
+| benign: popular PyPI package | 20 | 0 |
+
+Timing: median 1.27 ms, 95th percentile 295.51 ms per evaluation (Wall time per evaluation including recorded-evidence replay; varies by machine and is excluded from the reproducibility hash.)
 
 Results hash: see results.json. Re-running `npm run benchmark` on the same recording reproduces it.

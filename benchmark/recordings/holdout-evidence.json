@@ -1,0 +1,1504 @@
+{
+ "recordedAt": "2026-10-29T15:13:24.878Z",
+ "http": {
+  "https://api.npmjs.org/downloads/point/last-week/ansi-escapes": {
+   "status": 200,
+   "body": {
+    "downloads": 143587718
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/axios": {
+   "status": 200,
+   "body": {
+    "downloads": 119440415
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/call-bound": {
+   "status": 200,
+   "body": {
+    "downloads": 186283020
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/chownr": {
+   "status": 200,
+   "body": {
+    "downloads": 152322083
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/content-disposition": {
+   "status": 200,
+   "body": {
+    "downloads": 177144222
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/cosmiconfig": {
+   "status": 200,
+   "body": {
+    "downloads": 175355645
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/delayed-stream": {
+   "status": 200,
+   "body": {
+    "downloads": 134749272
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/depd": {
+   "status": 200,
+   "body": {
+    "downloads": 177550672
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/encodeurl": {
+   "status": 200,
+   "body": {
+    "downloads": 179645624
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/esrecurse": {
+   "status": 200,
+   "body": {
+    "downloads": 186850737
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/express": {
+   "status": 200,
+   "body": {
+    "downloads": 162948095
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/finalhandler": {
+   "status": 200,
+   "body": {
+    "downloads": 178140813
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/gensync": {
+   "status": 200,
+   "body": {
+    "downloads": 197450494
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/human-signals": {
+   "status": 200,
+   "body": {
+    "downloads": 169705962
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/is-arrayish": {
+   "status": 200,
+   "body": {
+    "downloads": 171169026
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/jest-util": {
+   "status": 200,
+   "body": {
+    "downloads": 157179545
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/json-stable-stringify-without-jsonify": {
+   "status": 200,
+   "body": {
+    "downloads": 176018669
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/jsonfile": {
+   "status": 200,
+   "body": {
+    "downloads": 186765826
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/once": {
+   "status": 200,
+   "body": {
+    "downloads": 187588019
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/open": {
+   "status": 200,
+   "body": {
+    "downloads": 219183185
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/parse-json": {
+   "status": 200,
+   "body": {
+    "downloads": 187962576
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/parse5": {
+   "status": 200,
+   "body": {
+    "downloads": 226897416
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/prettier": {
+   "status": 200,
+   "body": {
+    "downloads": 149452267
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/run-parallel": {
+   "status": 200,
+   "body": {
+    "downloads": 166311341
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/schema-utils": {
+   "status": 200,
+   "body": {
+    "downloads": 126764494
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/send": {
+   "status": 200,
+   "body": {
+    "downloads": 172669037
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/source-map-support": {
+   "status": 200,
+   "body": {
+    "downloads": 154067874
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/ts-api-utils": {
+   "status": 200,
+   "body": {
+    "downloads": 169618432
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/type-is": {
+   "status": 200,
+   "body": {
+    "downloads": 177462280
+   }
+  },
+  "https://api.npmjs.org/downloads/point/last-week/word-wrap": {
+   "status": 200,
+   "body": {
+    "downloads": 174638925
+   }
+  },
+  "https://pypi.org/pypi/alembic-core-utils/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/azur-core/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/cherdet/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/defusedxml/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "0.7.1"
+    },
+    "releases": {
+     "0.3": [
+      {
+       "upload_time_iso_8601": "2013-02-19T15:05:02.856156Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/distlib/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "0.4.4"
+    },
+    "releases": {
+     "0.1.0": [
+      {
+       "upload_time_iso_8601": "2013-03-02T00:42:16.388922Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/dnspython/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "2.9.0"
+    },
+    "releases": {
+     "1.11.0": [
+      {
+       "upload_time_iso_8601": "2013-07-22T12:13:40.098223Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/docstring-parser/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "0.18.0"
+    },
+    "releases": {
+     "0.1": [
+      {
+       "upload_time_iso_8601": "2018-04-17T13:30:36.440238Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/editables/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "0.6"
+    },
+    "releases": {
+     "0.1": [
+      {
+       "upload_time_iso_8601": "2020-06-15T13:55:38.567529Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/email-avlidator/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/fonttools-async-lib/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/gitpthon/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/hf-xet-turbo-kit/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/httpcore2/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "2.16.0"
+    },
+    "releases": {
+     "0.0.0": [
+      {
+       "upload_time_iso_8601": "2026-05-11T09:18:45.766107Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/httptools/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "0.9.0"
+    },
+    "releases": {
+     "0.0.1": [
+      {
+       "upload_time_iso_8601": "2015-10-29T20:30:47.378687Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/httpx2/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "2.16.0"
+    },
+    "releases": {
+     "0.0.0": [
+      {
+       "upload_time_iso_8601": "2026-05-11T06:12:34.916478Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/itsdagnerous/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/jeblib/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/mako-cloud-bridge/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/matploteib/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/more-itertools/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "11.2.1"
+    },
+    "releases": {
+     "1.0": [
+      {
+       "upload_time_iso_8601": "2012-04-26T07:26:41.597157Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/msgpack-core-utils/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/myypy/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/networkx/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "3.7"
+    },
+    "releases": {
+     "0.34": [
+      {
+       "upload_time_iso_8601": "2007-04-13T01:49:38Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/oauthlib/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "4.0.0"
+    },
+    "releases": {
+     "0.0.1": [
+      {
+       "upload_time_iso_8601": "2012-04-11T16:14:11.275829Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/opentelemetry-exporter-otlp-proto-common/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "1.45.1"
+    },
+    "releases": {
+     "1.18.0": [
+      {
+       "upload_time_iso_8601": "2023-05-19T21:38:38.374629Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/opentelemetry-proto/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "1.45.1"
+    },
+    "releases": {
+     "0.9b0": [
+      {
+       "upload_time_iso_8601": "2020-06-11T04:41:40.626780Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/orjson-cloud-bridge/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/prompt-toolkit-plusplus/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/psycopg2-binary/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "2.9.13"
+    },
+    "releases": {
+     "2.7.3.2": [
+      {
+       "upload_time_iso_8601": "2018-01-29T12:48:22.551103Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/pytest-asyncio/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "1.4.1"
+    },
+    "releases": {
+     "0.1": [
+      {
+       "upload_time_iso_8601": "2015-04-11T13:41:21.388708Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/pytest-cov/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "7.1.0"
+    },
+    "releases": {
+     "0.6": [
+      {
+       "upload_time_iso_8601": "2010-04-25T03:43:13.053037Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/redis/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "8.1.0"
+    },
+    "releases": {
+     "2.7.0": [
+      {
+       "upload_time_iso_8601": "2012-10-08T06:40:56.248269Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/requests-toolbelt/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "1.0.0"
+    },
+    "releases": {
+     "0.1.0": [
+      {
+       "upload_time_iso_8601": "2014-01-18T22:06:38.150013Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/scikit-learn-next-gen/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/sortedcontainers/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "2.4.0"
+    },
+    "releases": {
+     "0.5.0": [
+      {
+       "upload_time_iso_8601": "2014-03-18T17:27:57.485589Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/tiktoken-turbo-kit/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/tzeocal/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/uvloop/json": {
+   "status": 200,
+   "body": {
+    "info": {
+     "version": "0.23.0"
+    },
+    "releases": {
+     "0.4.1": [
+      {
+       "upload_time_iso_8601": "2016-04-12T13:45:29.770173Z"
+      }
+     ]
+    }
+   }
+  },
+  "https://pypi.org/pypi/weboscket-client/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://pypi.org/pypi/werkzeug-pro-sdk/json": {
+   "status": 404,
+   "body": {
+    "info": {},
+    "releases": {}
+   }
+  },
+  "https://rdap.org/domain/nip.io": {
+   "status": 403
+  },
+  "https://registry.npmjs.org/ansi-escapes": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "7.3.0"
+    },
+    "time": {
+     "created": "2015-08-14T15:26:46.205Z"
+    },
+    "versions": {
+     "7.3.0": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/any-prommise": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/assertion-erroor": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/axios": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "1.21.0"
+    },
+    "time": {
+     "created": "2014-08-29T23:08:36.810Z"
+    },
+    "versions": {
+     "1.21.0": {
+      "scripts": {},
+      "dist": {
+       "attestations": {
+        "present": true
+       }
+      }
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/buffer-from-async-lib": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/call-bound": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "1.0.4"
+    },
+    "time": {
+     "created": "2024-12-05T22:42:28.090Z"
+    },
+    "versions": {
+     "1.0.4": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/chownr": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "3.0.0"
+    },
+    "time": {
+     "created": "2012-06-04T04:01:25.807Z"
+    },
+    "versions": {
+     "3.0.0": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/cjs-module-lexer-core-utils": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/content-disposition": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "3.0.0"
+    },
+    "time": {
+     "created": "2014-09-19T05:02:12.936Z"
+    },
+    "versions": {
+     "3.0.0": {
+      "scripts": {},
+      "dist": {
+       "attestations": {
+        "present": true
+       }
+      }
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/cosmiconfig": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "10.0.1"
+    },
+    "time": {
+     "created": "2015-11-12T02:06:06.728Z"
+    },
+    "versions": {
+     "10.0.1": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/cssesc-turbo-kit": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/d3-eath": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/d3-shae": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/define-data-property-js-tools": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/delayed-stream": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "1.0.0"
+    },
+    "time": {
+     "created": "2011-05-22T13:50:32.615Z"
+    },
+    "versions": {
+     "1.0.0": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/depd": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "2.0.0"
+    },
+    "time": {
+     "created": "2014-06-15T05:36:40.048Z"
+    },
+    "versions": {
+     "2.0.0": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/domelementtype-turbo-kit": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/encodeurl": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "2.0.1"
+    },
+    "time": {
+     "created": "2016-06-08T18:58:44.662Z"
+    },
+    "versions": {
+     "2.0.1": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/es-abstract-core-utils": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/esrecurse": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "4.3.0"
+    },
+    "time": {
+     "created": "2014-12-02T11:53:32.918Z"
+    },
+    "versions": {
+     "4.3.0": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/est-o-primitive": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/etag-pro-sdk": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/express": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "5.3.0"
+    },
+    "time": {
+     "created": "2010-12-29T19:38:25.450Z"
+    },
+    "versions": {
+     "5.3.0": {
+      "scripts": {},
+      "dist": {
+       "attestations": {
+        "present": true
+       }
+      }
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/fast-uri-async-lib": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/figurs": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/finalhandler": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "2.1.1"
+    },
+    "time": {
+     "created": "2014-06-06T02:46:23.972Z"
+    },
+    "versions": {
+     "2.1.1": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/for-each-cloud-bridge": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/gensync": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "1.0.0-beta.2"
+    },
+    "time": {
+     "created": "2015-11-23T04:44:36.845Z"
+    },
+    "versions": {
+     "1.0.0-beta.2": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/hosted-git-info-pro-sdk": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/htmlparser2-async-lib": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/human-signals": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "8.0.1"
+    },
+    "time": {
+     "created": "2019-10-12T18:52:58.137Z"
+    },
+    "versions": {
+     "8.0.1": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/ip-address-pro-sdk": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/is-arrayish": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "0.3.4"
+    },
+    "time": {
+     "created": "2015-08-25T17:08:51.805Z"
+    },
+    "versions": {
+     "0.3.4": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/is-arrray-buffer": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/jest-message-util-turbo-kit": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/jest-mok": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/jest-regex-etil": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/jest-util": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "30.5.1"
+    },
+    "time": {
+     "created": "2016-02-16T19:34:20.253Z"
+    },
+    "versions": {
+     "30.5.1": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/json-stable-stringify-without-jsonify": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "1.0.1"
+    },
+    "time": {
+     "created": "2016-12-15T22:00:35.805Z"
+    },
+    "versions": {
+     "1.0.1": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/jsonfile": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "6.2.1"
+    },
+    "time": {
+     "created": "2012-09-10T19:09:18.641Z"
+    },
+    "versions": {
+     "6.2.1": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/ligetningcss": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/lilconfig-next-gen": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/lnog": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/node-addon-api-pro-sdk": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/nthc-heck": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/once": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "1.4.0"
+    },
+    "time": {
+     "created": "2012-08-14T07:25:56.929Z"
+    },
+    "versions": {
+     "1.4.0": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/open": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "11.0.4"
+    },
+    "time": {
+     "created": "2012-04-14T16:52:46.254Z"
+    },
+    "versions": {
+     "11.0.4": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/package-json-from-dist-async-lib": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/pako-pro-sdk": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/parse-json": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "8.3.0"
+    },
+    "time": {
+     "created": "2015-07-28T19:05:09.989Z"
+    },
+    "versions": {
+     "8.3.0": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/parse5": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "8.0.1"
+    },
+    "time": {
+     "created": "2013-07-03T09:19:28.186Z"
+    },
+    "versions": {
+     "8.0.1": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/pkg-dir-next-gen": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/possible-typed-arrey-names": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/prettier": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "3.9.10"
+    },
+    "time": {
+     "created": "2017-01-10T03:45:38.963Z"
+    },
+    "versions": {
+     "3.9.10": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/prooc-log": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/range-parser-async-lib": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/run-parallel": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "1.2.0"
+    },
+    "time": {
+     "created": "2014-04-12T09:25:52.411Z"
+    },
+    "versions": {
+     "1.2.0": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/safe-arrya-concat": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/schema-utils": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "4.8.1"
+    },
+    "time": {
+     "created": "2017-03-07T06:01:28.207Z"
+    },
+    "versions": {
+     "4.8.1": {
+      "scripts": {},
+      "dist": {
+       "attestations": {
+        "present": true
+       }
+      }
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/send": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "1.2.1"
+    },
+    "time": {
+     "created": "2012-07-04T02:26:08.255Z"
+    },
+    "versions": {
+     "1.2.1": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/soks": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/source-map-support": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "0.5.21"
+    },
+    "time": {
+     "created": "2013-01-18T11:30:08.096Z"
+    },
+    "versions": {
+     "0.5.21": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/std-ev": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/tersar": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/tinyraineow": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/ts-api-utils": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "2.5.0"
+    },
+    "time": {
+     "created": "2023-02-07T15:19:43.786Z"
+    },
+    "versions": {
+     "2.5.0": {
+      "scripts": {},
+      "dist": {
+       "attestations": {
+        "present": true
+       }
+      }
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/type-is": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "3.0.0"
+    },
+    "time": {
+     "created": "2013-12-28T00:06:19.362Z"
+    },
+    "versions": {
+     "3.0.0": {
+      "scripts": {},
+      "dist": {
+       "attestations": {
+        "present": true
+       }
+      }
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/unpipe-next-gen": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  },
+  "https://registry.npmjs.org/word-wrap": {
+   "status": 200,
+   "body": {
+    "dist-tags": {
+     "latest": "1.2.5"
+    },
+    "time": {
+     "created": "2014-03-30T08:47:04.382Z"
+    },
+    "versions": {
+     "1.2.5": {
+      "scripts": {},
+      "dist": {}
+     }
+    }
+   }
+  },
+  "https://registry.npmjs.org/xml-name-valedator": {
+   "status": 404,
+   "body": {
+    "dist-tags": {},
+    "time": {},
+    "versions": {}
+   }
+  }
+ },
+ "dns": {
+  "127.0.0.1.nip.io": {
+   "addresses": [
+    "127.0.0.1"
+   ]
+  },
+  "api.langchain-tools-official.dev": {
+   "code": "ENOTFOUND"
+  },
+  "cdn.chartjs-plugins-hub.net": {
+   "code": "ENOTFOUND"
+  },
+  "docs.prisma-orm-extensions.dev": {
+   "code": "ENOTFOUND"
+  },
+  "download.python-wheels-fast.org": {
+   "code": "ENOTFOUND"
+  },
+  "get.playwright-browsers-mirror.io": {
+   "code": "ENOTFOUND"
+  }
+ }
+}

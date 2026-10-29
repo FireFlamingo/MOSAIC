@@ -14,11 +14,13 @@ import { evaluateRisk } from '../server/engine.js';
 import { withEvidence } from '../server/evidence.js';
 import { RECOMMENDED_POLICY } from '../shared/scoring.js';
 import type { Evaluation } from '../shared/types.js';
-import { buildScenarios, type Scenario } from './corpus.js';
+import { buildHoldout, buildScenarios, type Scenario } from './corpus.js';
+import { existsSync } from 'node:fs';
 import type { Recording } from './record.js';
 
 const OUT = fileURLToPath(new URL('../output/benchmark/', import.meta.url));
 const RECORDING = fileURLToPath(new URL('./recordings/evidence.json', import.meta.url));
+const HOLDOUT_RECORDING = fileURLToPath(new URL('./recordings/holdout-evidence.json', import.meta.url));
 const popular = JSON.parse(await readFile(fileURLToPath(new URL('../shared/reference/popular-packages.json', import.meta.url)), 'utf8')) as { npm: string[]; pypi: string[] };
 
 interface Outcome { id: string; category: string; label: Scenario['label']; type: string; split: 'train' | 'test'; score: number; decision: Evaluation['decision']; flagged: boolean; floor?: string; memory: boolean; confidence?: Evaluation['confidence']; signals: string[]; ms: number }
@@ -34,7 +36,7 @@ const host = (target: string) => { try { return new URL(target).hostname; } catc
 function admissible(scenario: Scenario, recording: Recording): string | undefined {
   const target = scenario.events.find((event) => 'request' in event && event.target) as Extract<Scenario['events'][number], { request: unknown }>;
   const { request } = target;
-  const id = scenario.id;
+  const id = scenario.id.replace(/^H-/, '');
   if (/^A1-/.test(id) && npmLatest(recording, request.name) !== '404') return 'hallucinated npm name turned out to be registered';
   if (/^A1p-/.test(id) && pypiStatus(recording, request.name) !== 404) return 'hallucinated PyPI name turned out to be registered';
   if (/^A2-/.test(id) && popular.npm.includes(request.name)) return 'typo variant is itself a popular package';
@@ -159,6 +161,24 @@ async function main() {
     misses: full.filter((o) => o.label === 'malicious' && !o.flagged).map((o) => ({ id: o.id, category: o.category, score: o.score })),
     falseAlarms: full.filter((o) => o.label === 'benign' && o.flagged).map((o) => ({ id: o.id, category: o.category, score: o.score, signals: o.signals })),
   };
+  let holdout: Record<string, unknown> | undefined;
+  if (existsSync(HOLDOUT_RECORDING)) {
+    const holdoutRecording = JSON.parse(await readFile(HOLDOUT_RECORDING, 'utf8')) as Recording;
+    const built = buildHoldout();
+    const holdoutExcluded: Record<string, number> = {};
+    const used = built.filter((scenario) => { const reason = admissible(scenario, holdoutRecording); if (reason) holdoutExcluded[reason] = (holdoutExcluded[reason] ?? 0) + 1; return !reason; });
+    const holdoutFull = await runConfiguration(used, holdoutRecording, true);
+    const holdoutLayer1 = await runConfiguration(used, holdoutRecording, false);
+    holdout = {
+      note: 'Written after the rules were frozen at commit c1b12e9; never used to change them. This is the unbiased estimate.',
+      corpus: { built: built.length, used: used.length, excluded: holdoutExcluded, malicious: used.filter((s) => s.label === 'malicious').length, benign: used.filter((s) => s.label === 'benign').length, evidenceRecordedAt: holdoutRecording.recordedAt },
+      full: { overall: summarize(holdoutFull), byCategory: byKey(holdoutFull, (o) => o.category) },
+      layer1: { overall: summarize(holdoutLayer1) },
+      misses: holdoutFull.filter((o) => o.label === 'malicious' && !o.flagged).map((o) => ({ id: o.id, category: o.category, score: o.score, signals: o.signals })),
+      falseAlarms: holdoutFull.filter((o) => o.label === 'benign' && o.flagged).map((o) => ({ id: o.id, category: o.category, score: o.score, signals: o.signals })),
+    };
+    Object.assign(results, { holdout });
+  }
   const timing = { note: 'Wall time per evaluation including recorded-evidence replay; varies by machine and is excluded from the reproducibility hash.', p50Ms: quantile(full.map((o) => o.ms), 0.5), p95Ms: quantile(full.map((o) => o.ms), 0.95) };
   const digest = createHash('sha256').update(JSON.stringify(results)).digest('hex');
   await mkdir(OUT, { recursive: true });
@@ -169,6 +189,7 @@ async function main() {
   console.log(`Full CARD:  ${fmt(results.full.overall)}`);
   console.log(`Layer 1:    ${fmt(results.layer1.overall)}`);
   console.log(`Threshold chosen on train: ${results.thresholds.chosen}; test at default: ${fmt(results.thresholds.testAtDefault)}`);
+  if (holdout) console.log(`Hold-out:   ${fmt((holdout.full as { overall: ReturnType<typeof summarize> }).overall)}`);
   console.log(`Results hash: ${digest}`);
 }
 
@@ -222,7 +243,20 @@ ${Object.entries(results.confidenceCalibration).map(([level, s]: [string, any]) 
 
 Missed attacks: ${results.misses.length}. False alarms: ${results.falseAlarms.length}. Both are listed in results.json.
 
-Timing: median ${timing.p50Ms} ms, 95th percentile ${timing.p95Ms} ms per evaluation (${timing.note})
+${results.holdout ? `## Hold-out set (unbiased estimate)
+
+${results.holdout.note} ${results.holdout.corpus.used} scenarios (${results.holdout.corpus.malicious} malicious, ${results.holdout.corpus.benign} benign).
+
+| Configuration | Detection rate | False-positive rate | Precision |
+|---|---|---|---|
+| Full CARD | ${pct(results.holdout.full.overall.detectionRate)} | ${pct(results.holdout.full.overall.falsePositiveRate)} | ${pct(results.holdout.full.overall.precision)} |
+| Layer 1 only | ${pct(results.holdout.layer1.overall.detectionRate)} | ${pct(results.holdout.layer1.overall.falsePositiveRate)} | ${pct(results.holdout.layer1.overall.precision)} |
+
+| Category | Scenarios | Flagged |
+|---|---|---|
+${Object.entries(results.holdout.full.byCategory).map(([name, s]: [string, any]) => `| ${name} | ${s.n} | ${s.flagged} |`).join('\n')}
+
+` : ''}Timing: median ${timing.p50Ms} ms, 95th percentile ${timing.p95Ms} ms per evaluation (${timing.note})
 
 Results hash: see results.json. Re-running \`npm run benchmark\` on the same recording reproduces it.
 `;

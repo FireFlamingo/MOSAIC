@@ -1638,10 +1638,220 @@
       ]
     }
   ],
+  "holdout": {
+    "note": "Written after the rules were frozen at commit c1b12e9; never used to change them. This is the unbiased estimate.",
+    "corpus": {
+      "built": 144,
+      "used": 144,
+      "excluded": {},
+      "malicious": 81,
+      "benign": 63,
+      "evidenceRecordedAt": "2026-10-29T15:13:24.878Z"
+    },
+    "full": {
+      "overall": {
+        "n": 144,
+        "tp": 77,
+        "fp": 0,
+        "fn": 4,
+        "tn": 63,
+        "detectionRate": 0.951,
+        "falsePositiveRate": 0,
+        "precision": 1,
+        "f1": 0.975
+      },
+      "byCategory": {
+        "attack: hallucinated domain": {
+          "n": 5,
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "detectionRate": 1,
+          "falsePositiveRate": null,
+          "precision": 1,
+          "f1": 1,
+          "flagged": 5
+        },
+        "attack: hallucinated package (npm)": {
+          "n": 20,
+          "tp": 20,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "detectionRate": 1,
+          "falsePositiveRate": null,
+          "precision": 1,
+          "f1": 1,
+          "flagged": 20
+        },
+        "attack: hallucinated package (PyPI)": {
+          "n": 10,
+          "tp": 10,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "detectionRate": 1,
+          "falsePositiveRate": null,
+          "precision": 1,
+          "f1": 1,
+          "flagged": 10
+        },
+        "attack: internal address (SSRF)": {
+          "n": 3,
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "detectionRate": 1,
+          "falsePositiveRate": null,
+          "precision": 1,
+          "f1": 1,
+          "flagged": 3
+        },
+        "attack: MCP tool poisoning": {
+          "n": 5,
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "detectionRate": 1,
+          "falsePositiveRate": null,
+          "precision": 1,
+          "f1": 1,
+          "flagged": 5
+        },
+        "attack: poisoned instruction file": {
+          "n": 8,
+          "tp": 4,
+          "fp": 0,
+          "fn": 4,
+          "tn": 0,
+          "detectionRate": 0.5,
+          "falsePositiveRate": null,
+          "precision": 1,
+          "f1": 0.667,
+          "flagged": 4
+        },
+        "attack: typosquat (npm)": {
+          "n": 20,
+          "tp": 20,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "detectionRate": 1,
+          "falsePositiveRate": null,
+          "precision": 1,
+          "f1": 1,
+          "flagged": 20
+        },
+        "attack: typosquat (PyPI)": {
+          "n": 10,
+          "tp": 10,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "detectionRate": 1,
+          "falsePositiveRate": null,
+          "precision": 1,
+          "f1": 1,
+          "flagged": 10
+        },
+        "benign: instruction file": {
+          "n": 8,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 8,
+          "detectionRate": null,
+          "falsePositiveRate": 0,
+          "precision": null,
+          "f1": null,
+          "flagged": 0
+        },
+        "benign: MCP server": {
+          "n": 5,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 5,
+          "detectionRate": null,
+          "falsePositiveRate": 0,
+          "precision": null,
+          "f1": null,
+          "flagged": 0
+        },
+        "benign: popular npm package": {
+          "n": 30,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 30,
+          "detectionRate": null,
+          "falsePositiveRate": 0,
+          "precision": null,
+          "f1": null,
+          "flagged": 0
+        },
+        "benign: popular PyPI package": {
+          "n": 20,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 20,
+          "detectionRate": null,
+          "falsePositiveRate": 0,
+          "precision": null,
+          "f1": null,
+          "flagged": 0
+        }
+      }
+    },
+    "layer1": {
+      "overall": {
+        "n": 144,
+        "tp": 77,
+        "fp": 0,
+        "fn": 4,
+        "tn": 63,
+        "detectionRate": 0.951,
+        "falsePositiveRate": 0,
+        "precision": 1,
+        "f1": 0.975
+      }
+    },
+    "misses": [
+      {
+        "id": "H-A8-1",
+        "category": "attack: poisoned instruction file",
+        "score": 0,
+        "signals": []
+      },
+      {
+        "id": "H-A8-5",
+        "category": "attack: poisoned instruction file",
+        "score": 0,
+        "signals": []
+      },
+      {
+        "id": "H-A8-6",
+        "category": "attack: poisoned instruction file",
+        "score": 0,
+        "signals": []
+      },
+      {
+        "id": "H-A8-8",
+        "category": "attack: poisoned instruction file",
+        "score": 0,
+        "signals": []
+      }
+    ],
+    "falseAlarms": []
+  },
   "timing": {
     "note": "Wall time per evaluation including recorded-evidence replay; varies by machine and is excluded from the reproducibility hash.",
-    "p50Ms": 1.36,
-    "p95Ms": 278.01
+    "p50Ms": 1.27,
+    "p95Ms": 295.51
   },
-  "resultsHash": "24dd02bd555adc9dda45edaf3e07b95d329353b135cc39772416148e232de908"
+  "resultsHash": "0007707e5782b90c73791e5af9b2ff804059843b7b5dd151b39a34d13c1d2cdf"
 }
