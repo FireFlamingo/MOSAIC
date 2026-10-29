@@ -214,7 +214,8 @@ export async function createApp(options: AppOptions = {}): Promise<CardApp> {
 }
 
 async function start() {
-  const { app, auth } = await createApp();
+  // Sample fixtures only on request, so a real deployment starts with an empty, real record.
+  const { app, auth } = await createApp({ seed: process.env.CARD_SAMPLE_DATA === '1' });
   const port = Number(process.env.PORT ?? 4318);
   app.listen(port, '127.0.0.1', () => {
     console.log(`CARD API listening at http://127.0.0.1:${port}`);

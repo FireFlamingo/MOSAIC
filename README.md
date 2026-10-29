@@ -2,92 +2,88 @@
 
 A middleware for autonomous coding agents against malicious dependency injection.
 
-A local, explainable risk gateway for AI coding-agent artifacts. Packages, skills, MCP servers, and remote URLs share one evaluation workflow and one review queue.
+Coding agents such as Claude Code and Codex install packages, fetch URLs, load instruction files (CLAUDE.md, AGENTS.md, skills) and call MCP servers on their own. CARD sits in front of those actions. Each one is checked against real registry and DNS evidence, scored by one explainable rule engine, linked to whatever earlier content prompted it, and then allowed, held for a human, or denied, before it runs.
 
-## Run locally
+## What it does
 
-Requires Node.js 22+ and npm.
+- **Intercepts live agent actions.** Claude Code and Codex hooks catch installs (npm, pnpm, yarn, bun, npx, pip, uv, pipx, poetry, cargo), URL fetches, instruction files and MCP calls. A local npm/PyPI registry proxy catches installs the hook cannot see, such as an install hidden inside an `npm run` script. An MCP proxy checks tool descriptions before the agent sees them.
+- **Looks facts up itself.** Existence, publish date, provenance attestations, install scripts and security takedowns come from npm and PyPI; DNS shows whether a domain exists or resolves to a private address. A failed lookup is "unverified", never "missing".
+- **One explainable score for four artifact types.** A weighted-v4 rubric (severity scale from Zahan et al., IEEE S&P 2023), decision floors for single critical findings, and a per-signal reason with sources. See [docs/SCORING.md](docs/SCORING.md).
+- **Cross-artifact context.** Session correlation links risky requests across types. Layer 2 links a request to the fetched page or MCP response that told the agent to make it.
+- **Human in the loop that cannot be bypassed.** Held actions wait in the dashboard; only a reviewer with the PIN can decide. Verdicts can be remembered as trust (one exact version, expiring) or blocks (every version), and feed false-positive / false-negative metrics.
+- **Tamper-evident audit.** Every evaluation, verdict, rule change and policy change is hash-chained and Ed25519-signed; `npm run verify:audit` checks an export offline.
+
+## Run it
+
+Requires Node.js 22+ (uses the built-in `node:sqlite`).
 
 ```sh
 npm ci
-npm run dev
-```
-
-Open http://127.0.0.1:4317. The API listens on loopback port 4318. For a single-server build:
-
-```sh
 npm run build
-npm start
+npm start                      # dashboard and API on http://127.0.0.1:4318
 ```
 
-Open http://127.0.0.1:4318. Run `npm run check` for automated tests and the production build.
+On first start the terminal prints a one-time setup code. Open the dashboard and choose a reviewer PIN with it. Sample data is off by default; start with `CARD_SAMPLE_DATA=1` to load the demo fixtures.
 
-Run `npm run test:browser` for the Playwright browser regression suite. It starts isolated local servers and temporary stores, leaving your `data/` untouched. Windows uses installed Microsoft Edge; other platforms use Chromium (`npx playwright install chromium` first). The suite covers forms, native selects, workflow menus, filtering, reviews, policy edits, audit downloads, reconnection, keyboard focus, and mobile navigation. Failed runs save screenshots and traces; open the report with `npx playwright show-report`.
-
-## MVP scope
-
-- Submit and inspect all four artifact types.
-- Get a deterministic 0–100 risk score, a per-signal explanation, and an allow/review/deny decision.
-- Include recent activity from the same session in cross-artifact scoring.
-- Adjust review and deny thresholds and enable or disable correlation.
-- Resolve held requests with a recorded human decision.
-- Persist evaluations and export a hash-linked audit trail.
-- Replay small synthetic scenarios through the actual evaluation API.
-
-The console includes an interactive session trace, review inbox, searchable paginated request stream, evidence inspector, and a threshold preview. See [the demonstration guide](docs/DEMO.md) for a short walkthrough.
-
-The [MVP capabilities and roadmap PDF](output/pdf/CARD-MVP-Guide.pdf) explains the working features, scoring example, demonstration steps, current limitations and planned final-project additions. Rebuild it with `python scripts/build_mvp_guide.py` after installing `reportlab`.
-
-For presenting, use the [black-and-white presentation guide](output/pdf/CARD-Presentation-Guide.pdf). It covers setup, a suggested live demonstration, the full feature checklist, and a field-by-field new-evaluation example with its expected result. Its editable source is [docs/PRESENTATION.md](docs/PRESENTATION.md); rebuild with `python scripts/build_presentation_guide.py` and `reportlab` installed.
-
-The interface uses locally bundled [Manrope](https://fontsource.org/fonts/manrope) headings and [Public Sans](https://fontsource.org/fonts/public-sans) text. It makes no Google Fonts requests. Font licenses are included in `public/fonts/` and copied into the production build.
-
-The initial observations and scenarios are **synthetic demonstrations**, not traffic from connected agents or a validated research benchmark. They run locally and never execute submitted artifacts.
-
-Scoring **weighted-v3** uses the severity scale and weighted-average method described by Zahan et al. in **IEEE Security & Privacy (2023)**. Package/skill/MCP groups have fixed budgets of 30/20/30/20, totaling 100. The strongest matched severity is normalized against the full applicable capacity (250, or 300 for URLs); unmatched groups remain in the denominator. For ops-mirror, 75 and 50 become contributions of **30 + 20 = 50/100**. There is no clipping. Group/range choices are CARD adaptations, and the result is not an attack probability. Defaults are review 20, deny 50. Age/downloads have no fixed penalty. See [the complete rules and references](docs/SCORING.md) and [the scoring defence PDF](output/pdf/CARD-Scoring-Rationale.pdf).
-
-New records include model version, policy and complete weighted calculation. Older records retain original scores and receipts. Upgrade changes only former factory thresholds 35/70 or 50/75 to 20/50; custom settings remain. Replay fresh examples for the current model.
-
-The scoring PDF's editable source is `docs/SCORING-RATIONALE.md`; rebuild it with `python scripts/build_presentation_guide.py --scoring` and `reportlab` installed. All three guides are plain black-and-white text, with clickable research links.
-
-## Evaluate from an agent integration
+Connect an agent to a workspace (project-level configuration only; user settings are never changed):
 
 ```sh
-curl http://127.0.0.1:4318/api/evaluate \
-  -H "Content-Type: application/json" \
-  -d '{"type":"package","name":"example-library","sessionId":"my-agent-session","metadata":{"exists":true,"ageDays":900,"downloads":100000,"signed":true}}'
+npm run card -- install claude --workspace <dir> --registry-proxy
+npm run card -- install codex  --workspace <dir> --registry-proxy
+npm run card -- proxy          # npm/PyPI registry proxy on 127.0.0.1:4873
+npm run card -- mcp-add claude --workspace <dir> --name <server> -- <server command...>
+npm run card -- status --workspace <dir>
 ```
 
-An integrating caller must submit the request **before** using an artifact, and only proceed when the returned decision is `allow`. A `review` result must pause that operation until a human resolves it. The API supplies decisions; this MVP does not transparently intercept shell commands, MCP traffic, or browser requests.
+Codex runs project hooks only after you trust them: open Codex in the workspace, accept "trust this project", then run `/hooks` and trust the CARD hooks.
 
-Request metadata is caller-supplied, not independently verified. Do not trust an untrusted agent to attest its own provenance in a production deployment. The built-in name catalog and content rules are deliberately small and illustrative; a low score is not a guarantee of safety.
+If CARD is not running, agents in connected workspaces are blocked from installs, fetches and MCP use (fail closed); ordinary editing is unaffected.
+
+## Measured results
+
+From [the benchmark](benchmark/README.md): real recorded registry and DNS data, CARD's production code path, deterministic results.
+
+| Set | Attacks caught | False alarms | Notes |
+|---|---|---|---|
+| Hold-out (144 scenarios, written after the rules were frozen) | 95.1% (77/81) | 0% (0/63) | The unbiased estimate. All 4 misses are reworded instruction files. It contains no hard benign cases. |
+| Main corpus (431 scenarios) | 96.6% | 9.8% | Optimistic: rule fixes were informed by these results. False alarms are official `curl \| sh` installers and installs an agent takes from a docs page the user did not name. |
+| Main corpus, Layer 1 only | 92.4% | 4.7% | Layer 2 adds cross-artifact detections at the cost of holding docs-following installs. |
+
+Per-request overhead: about 2.7 ms median through the API (scoring itself under 0.1 ms), flat from 100 to 5,000 stored evaluations ([output/performance](output/performance)). Live registry lookups add network time on first use; results are cached for an hour.
 
 ## Architecture
 
 ```text
-React console / cooperating caller
-              |
-              v
-       Local Express API
-              |
-              v
-   Deterministic scoring engine <--- recent session history
-              |
-              v
-      Threshold policy
-              |
-              v
-   JSON store + audit receipts
+Claude Code / Codex ──hook──┐   npm / pip ──registry proxy──┐   MCP client ──MCP proxy──┐
+                            ▼                               ▼                          ▼
+                 CARD API (Express, loopback) ── evidence: npm, PyPI, DNS, RDAP
+                            │
+        engine: signals ─▶ weighted score ─▶ thresholds + decision floors
+                            │   + session history, Layer 2 observations, decision memory
+                            ▼
+           allow · review (waits for a signed-in human) · deny
+                            │
+              SQLite store ─▶ hash-chained, signed audit log ─▶ dashboard (React)
 ```
 
-`shared/types.ts` defines the contract. `server/engine.ts` contains the rules. `server/store.ts` owns persistence. `src/` contains the console.
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Comparison with Pipelock and mcp-firewall: [docs/COMPARISON.md](docs/COMPARISON.md). Live demo script: [docs/PRESENTATION.md](docs/PRESENTATION.md).
 
-## Limits and next steps
+## Development
 
-This is a single-user local prototype. Keep it bound to loopback. It has no user authentication, multi-process storage coordination, live registry or reputation feeds, universal agent interception, or production enforcement adapter. Receipts are hash-linked, not cryptographically signed or externally anchored; someone able to rewrite the entire store can recompute them.
+| Command | Purpose |
+|---|---|
+| `npm run dev` | API on 4318 and Vite dev server on 4317 |
+| `npm run check` | Unit, API, adapter and proxy tests, type check, production build |
+| `npm run test:browser` | Playwright browser suite (uses installed Edge on Windows) |
+| `npm run benchmark` | Replays the benchmark and writes output/benchmark |
+| `npm run bench` | Latency benchmark (output/performance) |
+| `npm run verify:audit -- <export.json>` | Verifies a downloaded audit export |
 
-The larger brief's 200–500-case incident corpus, external baseline comparisons, learned scoring, paper claims, and integration with multiple coding agents are deferred. No detection-rate or novelty claims are made by this MVP.
+## Limits
 
-Local state lives under `data/` and is excluded from Git. Keep audit exports private if requests contain confidential content.
-
-Verify an exported evaluation chain with `npm run verify:audit -- path/to/card-audit.json`. This detects broken links or changed evaluation contents. It does not authenticate the author, detect a complete rewrite, or verify the separately recorded review and policy events. The rule definitions are documented in [docs/SCORING.md](docs/SCORING.md).
+- CARD protects only workspaces where it is installed. An agent with full shell access as the same OS user could still stop CARD or edit its files. CARD blocks the obvious paths (its reviewer API, its data and hook configuration), but true isolation needs CARD to run as a separate OS user or service.
+- Text rules miss reworded instructions; the benchmark measures this gap.
+- The confidence value is an explanation of how much was verified, and the benchmark shows it is not calibrated.
+- PyPI provenance attestations are not checked. Skills and MCP servers have no registry, so their evidence is what the adapter observed.
+- The benchmark was written by the same team that wrote the rules. The hold-out set reduces but does not remove that bias.
+- Codex integration follows Codex's documented hook and MCP formats; it is verified by contract tests, not yet by a live Codex session on this machine.

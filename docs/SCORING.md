@@ -1,4 +1,4 @@
-# CARD scoring: weighted-v3
+# CARD scoring: weighted-v4
 
 The numerical severity scale is sourced from **Zahan et al., "OpenSSF Scorecard: On the Path Toward Ecosystem-Wide Automated Security Metrics," IEEE Security & Privacy 21(6), 76-88, 2023**, DOI [10.1109/MSEC.2023.3279773](https://doi.org/10.1109/MSEC.2023.3279773). The [author manuscript, Section II](https://arxiv.org/html/2208.03412v3#S2) explicitly reports Low = 2.5, Medium = 5, High = 7.5, Critical = 10.
 
@@ -17,21 +17,26 @@ CARD uses **raw severity ratings** of 25 / 50 / 75 / 100, preserving the publish
 
 | Signal | Raw severity | Group | Rationale and source |
 | --- | ---: | --- | --- |
-| Artifact reported missing | 75 | Identity & provenance | Request cannot be fulfilled as identified. Spracklen et al., USENIX Security 2025, documents package hallucination and its attack surface. Only a caller report is used here; no registry check. |
+| Artifact missing | 75 | Identity & provenance | Request cannot be fulfilled as identified. Spracklen et al., USENIX Security 2025, documents package hallucination and its attack surface. In live mode the registry (npm, PyPI) or DNS answers this; a failed lookup is unverified, never missing. Decision floor: Deny. |
+| Removed by registry security | 75 | Identity & provenance | npm replaces removed malware with a security holding package (version 0.0.x-security). Looked up, never caller-supplied. Decision floor: Deny. |
 | Existence unverified | 25 | Identity & provenance | Missing evidence is weaker than reported nonexistence. This distinction is a CARD policy judgement motivated by the same research. |
-| Known-package lookalike | 50 | Identity & provenance | Ohm et al., DIMVA 2020, documents typosquatting. Similar names can be legitimate, so similarity merits review rather than a malware claim. Catalog and edit-distance boundary are prototype choices. |
+| Known-package lookalike | 50 | Identity & provenance | Ohm et al., DIMVA 2020, documents typosquatting. Reference: the full npm-high-impact list (17,338 names) and the top 2,000 PyPI projects. A name matches if it equals a reference after removing punctuation (crossenv / cross-env), adds a squatting affix (node-, .js, js), or is within an optimal-string-alignment distance of max(1, 20% of the length), where an adjacent swap counts as one edit. Exact matches are the real package. Also applied to MCP server names. Decision floor: Review. |
 | Reported unsigned | 25 | Identity & provenance | Zahan et al. discusses signed provenance. Its Signed-Releases check is High; CARD uses Low because an unverified boolean is weaker than examining actual releases. This is an explicit adaptation. |
 | General elevated capability | 25 | Requested capabilities | Network/filesystem/clipboard/browser access creates potential exposure but is often needed legitimately. OWASP AI Agent Security motivates least privilege. IEEE Token-Permissions is related but repository-specific. |
 | Sensitive capability | 50 | Requested capabilities | Shell, process spawning or secrets access increases execution/confidentiality impact. OWASP least privilege supports review. Duplicates and permission counts do not multiply points. |
 | Obfuscation marker | 25 | Static content | Ohm et al. and Sejfia & Schäfer, ICSE 2022, motivate suspicious-code inspection. Encoding also occurs in benign code, making a bare marker weak evidence. |
 | Credential-location marker | 25 | Static content | The same research discusses exfiltration-related behavior. A reference such as process.env does not establish theft, hence Low. Their trained/behavioral analyses are not implemented here. |
 | Remote download piped to shell | 75 | Static content | Ohm et al. studies execution mechanisms and payloads. The pattern can run unreviewed code, warranting intervention. Legitimate installers can use it too. |
-| Instruction override in skill/MCP text | 75 | Static content | Abdelnabi et al., ACM AISec 2023, demonstrates indirect prompt injection. An override in an instruction-bearing artifact gets conservative High priority; a text match is not a successful-attack measurement. |
+| Instruction override in skill/MCP text | 75 | Static content | Abdelnabi et al., ACM AISec 2023, demonstrates indirect prompt injection. Includes hidden-instruction markers used in MCP tool poisoning (<IMPORTANT>, "do not tell the user"). A text match is not a successful-attack measurement. Decision floor: Review. |
+| Directs secret access or encoded code (skill/MCP text) | 75 | Static content | In instruction files and MCP descriptions the text is a direction to the agent, so pointing it at credentials, secret files or encoded code is far more serious than the same string in package source. OWASP AI Agent Security. Decision floor: Review. |
 | Non-HTTPS URL | 50 | URL & transport | MITRE CWE-319 motivates cleartext-transmission concerns. This does not establish that sensitive data is actually transmitted. |
-| Local/private URL host | 50 | URL & transport | OWASP SSRF Prevention motivates network-boundary checks. Approved internal services can be legitimate. Literal parsing only; no DNS/HTTP request. |
+| Local/private URL host | 50 | URL & transport | OWASP SSRF Prevention motivates network-boundary checks. Approved internal services can be legitimate. Literal addresses are parsed locally; in live mode a public name that resolves to a private address (DNS rebinding) also matches. Decision floor: Review. |
+| Lookalike domain | 50 | URL & transport | Agten et al., NDSS 2015, document typosquatting domains. A one-edit near-miss of a commonly fetched domain, or a known domain used as a subdomain of another (github.com.example.io). Decision floor: Review. |
 | Invalid URL | 50 | URL & transport | Destination cannot be classified. Review is a CARD fail-safe input policy, not a learned coefficient. |
 | Prior non-allowed cross-type request | 25 | Session context | Indirect-injection research and OWASP behavior monitoring motivate history inspection. Generic earlier activity is a weak cue. |
-| Shared name across those requests | 50 | Session context | A shared identifier is a stronger link than timing alone. This uplift is CARD's research hypothesis, not an improvement measured by the cited papers. |
+| Shared name across those requests | 50 | Session context | A shared identifier is a stronger link than timing alone; for URLs the host labels and path segments count. This uplift is CARD's research hypothesis. |
+| Instructed by external content (Layer 2) | 50 | Session context | A page or MCP response the agent fetched earlier in the session told it to install or fetch this exact artifact, and the user did not name it. Abdelnabi et al. The same instruction in a local file or command output is recorded but not scored. |
+| Introduced by external content (Layer 2) | 25 | Session context | The artifact first appeared in fetched content, not in the user's request. |
 
 Age and download count are visible context with **zero points**. No transferable evidence was found for universal 7-day or 50-download cutoffs in the reviewed papers. These features could still be useful in a trained, ecosystem-specific model.
 
@@ -91,3 +96,29 @@ Tests cover every combination of the current severity levels across all four pro
 5. Abdelnabi, S. et al. "Not What You've Signed Up For: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection." **16th ACM AISec**, 2023, pp. 79-90. DOI: [10.1145/3605764.3623985](https://doi.org/10.1145/3605764.3623985). [Manuscript](https://arxiv.org/abs/2302.12173).
 
 Additional guidance (not conference papers): [OWASP AI Agent Security](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html), [OWASP SSRF Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html), [MITRE CWE-319](https://cwe.mitre.org/data/definitions/319.html), [NIST SP 800-30r1](https://doi.org/10.6028/NIST.SP.800-30r1). Inspected 5 October 2026. None endorses CARD's accuracy or thresholds.
+
+## Decision floors (v4)
+
+The weighted average keeps every applicable group in the denominator, so one critical finding in one group cannot reach a threshold alone (a plain-HTTP request to a private IP scores 16.67). A floor sets a minimum decision for such findings. It only ever raises a decision, and a looser policy cannot lower it.
+
+| Finding | Minimum decision |
+|---|---|
+| Artifact missing, removed by registry security | Deny |
+| Remote download piped to a shell, instruction override, directs secret access or encoded code, local/private host, invalid URL, lookalike name or domain | Review |
+
+## Confidence
+
+Each evaluation carries an explained confidence: 0.6 x (verified checks / applicable checks) + 0.4 x margin, where margin is the distance to the nearest threshold divided by 20 (capped at 1). A reviewer rule or a decision floor counts as full margin. Levels: low < 0.4, medium < 0.7, high. It is an estimate, and the benchmark shows it is **not calibrated**: decisions were correct 97% of the time at low confidence, 85% at medium and 96% at high. Treat it as an explanation of how much was verified, not as a probability.
+
+## Changes from weighted-v3
+
+| Change | Why |
+|---|---|
+| Decision floors | Single critical findings were diluted (private-IP HTTP and lookalike domains were allowed). |
+| Live registry and DNS evidence | Caller-supplied metadata could be faked. |
+| Lookalike: adjacent swaps, full reference list, punctuation and affix variants, MCP names, domains | `axois` and the 2017 `crossenv` names were missed. |
+| Registry takedown, secret-directing instructions | Benchmark misses (initial run kept in output/benchmark/results-initial-v4.json). |
+| Layer 2 chain signals; local instructions unscored | Detect steering by fetched content; README installs caused false alarms. |
+| Session correlation uses human verdicts | A request a reviewer called safe should stop raising suspicion. |
+
+Policy defaults are unchanged: review at 20, deny at 50. On the benchmark's train split, Youden's J selects a review threshold of 30. On the test split that lowers false positives from 9.2% to 2.8% but also lowers detection from 97.3% to 90.1%. The default 20 is kept because a missed attack costs more than a held request a reviewer can approve; the threshold is a policy choice reviewers can change.

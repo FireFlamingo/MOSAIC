@@ -1,5 +1,7 @@
 # CARD: weighted scoring and presentation defence
 
+**Current model: weighted-v4.** This document defends the severity scale and weighted aggregation, which are unchanged. The v4 additions (decision floors, registry evidence, new signals, Layer 2, confidence) and the reasons for each are in docs/SCORING.md, section "Changes from weighted-v3".
+
 ## 1. Published basis and what changed
 
 Applies to **weighted-v3**, prepared for the 6 October 2026 presentation. Black-and-white text only. Use a fresh replay: older saved records retain their earlier scoring model.

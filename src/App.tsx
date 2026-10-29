@@ -321,6 +321,7 @@ export default function App() {
     }
   }
   const pending = state.evaluations.filter((e) => resolved(e) === "review");
+  const hasSamples = state.evaluations.some((e) => e.request.sessionId.startsWith("seed-") || e.request.sessionId.startsWith("scenario-"));
   // Only requests an agent is still waiting on; timed-out ones were already blocked and stay in the review queue.
   const waitMs = (e: Evaluation) => (e.request.origin?.waitSeconds ?? AGENT_WAIT_MS / 1000) * 1000;
   const waiting = pending.filter((e) => (e.request.origin?.agent === "claude" || e.request.origin?.agent === "codex") && clock - Date.parse(e.timestamp) < waitMs(e));
@@ -478,10 +479,12 @@ export default function App() {
             <strong>{view}</strong>
           </div>
           <div className="topbar-tools">
-            <span className="fixture-chip">
-              <span />
-              Synthetic fixtures
-            </span>
+            {hasSamples && (
+              <span className="fixture-chip" title="Sample and replayed scenarios are mixed with real requests">
+                <span />
+                Includes sample data
+              </span>
+            )}
             <span className={`connection ${online ? "" : "disconnected"}`}>
               <i />
               {loading ? "Connecting" : online ? "API reachable" : "Offline"}
