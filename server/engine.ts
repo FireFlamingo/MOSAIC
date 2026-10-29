@@ -121,14 +121,14 @@ export function evaluateRisk(
   const content = request.content ?? '';
   const indicators: Array<[SignalId, RegExp, string]> = [
     ['obfuscated-content', /(?:fromcharcode|\\\\x[0-9a-f]{2}|base64\s*,\s*['\"]|atob\s*\()/i, 'Static content contains an encoding or obfuscation marker. Encoding also occurs in benign code.'],
-    ['credential-access', /(?:process\.env|\.npmrc|aws_access_key|private[_ -]?key|authorization:\s*bearer)/i, 'Static content references an environment variable or credential-bearing location. The match does not establish secret theft.'],
+    ['credential-access', /(?:process\.env|\.npmrc|aws_access_key|private[_ -]?key|authorization:\s*bearer|\.ssh[\/]|id_rsa|id_ed25519|\.aws[\/]credentials)/i, 'Static content references an environment variable or credential-bearing location. The match does not establish secret theft.'],
     ['remote-payload', /(?:curl\s+[^\n]+\|\s*(?:sh|bash)|wget\s+[^\n]+\|\s*(?:sh|bash)|invoke-webrequest.+\||\b(?:iwr|irm|invoke-restmethod)\b[^\n]*\|\s*(?:iex|invoke-expression)\b)/i, 'Static content includes a shell-piped remote download pattern. This can execute unreviewed remote code, but the MVP does not run it or establish intent.'],
   ];
   for (const [id, pattern, reason] of indicators) {
     if (pattern.test(content)) signals.push(signal(id, reason));
   }
 
-  if ((request.type === 'skill' || request.type === 'mcp') && /(?:ignore (?:all )?(?:previous|prior) instructions|disable (?:the )?security|bypass (?:the )?security)/i.test(content)) {
+  if ((request.type === 'skill' || request.type === 'mcp') && /(?:ignore (?:all )?(?:previous|prior) instructions|disable (?:the )?security|bypass (?:the )?security|<important>|do not (?:tell|inform|mention|reveal)(?: this)?(?: to)? the user)/i.test(content)) {
     signals.push(signal('instruction-override', 'Static instructions attempt to override prior guidance or disable security controls. A literal text match is not a demonstrated successful prompt injection.'));
   }
 

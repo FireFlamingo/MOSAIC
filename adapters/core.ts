@@ -127,9 +127,9 @@ export function extractArtifacts(payload: HookPayload, deps: Pick<Deps, 'readFil
 
 const sessionOf = (agent: Agent, payload: HookPayload) => `${agent}:${payload.session_id ?? 'unknown'}`;
 
-class Unreachable extends Error {}
+export class Unreachable extends Error {}
 
-async function call<T>(deps: Deps, path: string, init?: RequestInit): Promise<T> {
+export async function call<T>(deps: Pick<Deps, 'fetch' | 'cardUrl'>, path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
     response = await deps.fetch(`${deps.cardUrl}${path}`, { ...init, headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) }, signal: AbortSignal.timeout(20_000) });
@@ -158,7 +158,7 @@ export function explain(evaluation: Evaluation, label: string, final: 'allow' | 
 }
 
 /** Waits for a human verdict on a held request; no answer within the limit means deny. */
-async function awaitReview(evaluation: Evaluation, deps: Deps): Promise<Evaluation | undefined> {
+export async function awaitReview(evaluation: Evaluation, deps: Deps): Promise<Evaluation | undefined> {
   const deadline = deps.now() + deps.reviewTimeoutMs;
   while (deps.now() < deadline) {
     await deps.sleep(deps.pollMs);
