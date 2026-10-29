@@ -1,4 +1,5 @@
-import type { ArtifactRequest, Decision, DecisionFloor, Evaluation, Policy, Signal, ScoringBreakdown } from '../shared/types';
+import type { ArtifactRequest, Decision, DecisionFloor, Evaluation, Observation, Policy, Signal, ScoringBreakdown } from '../shared/types';
+import { traceChain } from './chain';
 import { normalizeName } from '../shared/names';
 import { lookalikeDomain, similarMcpServer, similarPopularPackage } from './lookalike';
 import { DECISION_FLOORS, EVIDENCE_GROUPS, RECOMMENDED_POLICY, SCORING_VERSION, SEVERITY_WEIGHTS, SIGNAL_RULES, scoringProfile, type EvidenceGroup, type SignalId } from '../shared/scoring';
@@ -91,7 +92,8 @@ export function evaluateRisk(
   request: ArtifactRequest,
   history: Evaluation[],
   policy: Policy,
-): { score: number; decision: Decision; signals: Signal[]; scoringVersion: string; policySnapshot: Policy; scoringBreakdown: ScoringBreakdown; decisionFloor?: DecisionFloor } {
+  observations: Observation[] = [],
+): { score: number; decision: Decision; signals: Signal[]; scoringVersion: string; policySnapshot: Policy; scoringBreakdown: ScoringBreakdown; decisionFloor?: DecisionFloor; chain?: Evaluation['chain'] } {
   const signals: Signal[] = [];
   const metadata = request.metadata;
 
@@ -169,11 +171,26 @@ export function evaluateRisk(
     if (nameMatch) signals.push(signal('name-correlation', 'A prior non-allowed artifact of another type used the same normalized name. The stronger contextual cue replaces the generic history contribution; its severity is a CARD research hypothesis.'));
   }
 
+  // Layer 2: earlier content in the session that told the agent to fetch or install this artifact.
+  let chain: Evaluation['chain'];
+  if (policy.correlationEnabled && observations.length) {
+    chain = traceChain(request, observations);
+    const quote = (link: NonNullable<typeof chain>['links'][number]) => `${link.tool} (${link.kind}) said: “${link.excerpt}”`;
+    const external = chain.links.find((link) => link.instruction && link.external);
+    const local = chain.links.find((link) => link.instruction && !link.external);
+    const mention = chain.links.find((link) => link.external);
+    if (chain.userRequested) { /* the user asked for it by name: explicit intent, not injection */ }
+    else if (external) signals.push(signal('chain-external-instruction', `Content the agent fetched told it to get this artifact. ${quote(external)} Instructions inside fetched content are the indirect prompt-injection channel; the user did not ask for it by name.`));
+    else if (local) signals.push(signal('chain-local-instruction', `A local file or command output told the agent to get this artifact. ${quote(local)} The user did not ask for it by name.`));
+    else if (mention) signals.push(signal('chain-external-mention', `The artifact first appeared in content the agent fetched, not in the user's request. ${quote(mention)}`));
+    if (!chain.links.length && !chain.userRequested) chain = undefined;
+  }
+
   const result = scoreSignals(request.type, signals);
   const thresholdDecision = deriveDecision(result.score, policy);
   const floor = decisionFloor(result.signals, thresholdDecision);
   return {
-    ...result, decision: floor?.decision ?? thresholdDecision, ...(floor ? { decisionFloor: floor } : {}),
+    ...result, decision: floor?.decision ?? thresholdDecision, ...(floor ? { decisionFloor: floor } : {}), ...(chain ? { chain } : {}),
     scoringVersion: SCORING_VERSION, policySnapshot: { ...policy },
   };
 }

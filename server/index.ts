@@ -34,7 +34,8 @@ function validateRequest(value: unknown): ArtifactRequest | undefined {
     if (!isObject(value.origin) || !INTEGRATIONS.has(value.origin.agent as string)) return undefined;
     if (value.origin.tool !== undefined && !isText(value.origin.tool, 80)) return undefined;
     if (value.origin.command !== undefined && !isText(value.origin.command, 1_000)) return undefined;
-    origin = { agent: value.origin.agent as NonNullable<ArtifactRequest['origin']>['agent'], ...(value.origin.tool ? { tool: value.origin.tool as string } : {}), ...(value.origin.command ? { command: value.origin.command as string } : {}) };
+    if (value.origin.waitSeconds !== undefined && (!Number.isInteger(value.origin.waitSeconds) || (value.origin.waitSeconds as number) < 1 || (value.origin.waitSeconds as number) > 3_600)) return undefined;
+    origin = { agent: value.origin.agent as NonNullable<ArtifactRequest['origin']>['agent'], ...(value.origin.tool ? { tool: value.origin.tool as string } : {}), ...(value.origin.command ? { command: value.origin.command as string } : {}), ...(value.origin.waitSeconds ? { waitSeconds: value.origin.waitSeconds as number } : {}) };
   }
   let metadata: ArtifactRequest['metadata'];
   if (value.metadata !== undefined) {

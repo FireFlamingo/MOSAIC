@@ -19,7 +19,7 @@ import type {
 import { EVIDENCE_GROUPS, SCORING_SOURCES, SCORING_VERSION, signalContribution } from "../shared/scoring";
 import { ruleDecisionOf } from "../shared/feedback";
 import { FeedbackPanel, FeedbackResult, MemoryNotice, type ReviewSubmission } from "./Feedback";
-import { EvidencePanel } from "./Evidence";
+import { ChainPanel, ConfidenceBadge, EvidencePanel } from "./Evidence";
 import {
   ArtifactIcon,
   Badge,
@@ -161,6 +161,7 @@ export function EvaluationDialog({
               </div>
               <Badge decision={resolved(selected)} />
             </div>
+            {selected.confidence && <ConfidenceBadge confidence={selected.confidence} />}
             <MemoryNotice evaluation={selected} />
             <div className="scoring-explanation">
               {selected.scoringVersion === SCORING_VERSION ? (
@@ -250,6 +251,7 @@ export function EvaluationDialog({
                 </div>
               )}
             </div>
+            {selected.chain && <ChainPanel chain={selected.chain} />}
             {selected.evidence && <EvidencePanel evidence={selected.evidence} />}
             <div className="inspector-section">
               <h3>Request context</h3>

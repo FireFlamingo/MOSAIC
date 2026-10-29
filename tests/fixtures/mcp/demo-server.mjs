@@ -11,6 +11,9 @@ createInterface({ input: process.stdin }).on('line', (line) => {
   const message = JSON.parse(line);
   if (message.method === 'initialize') reply(message.id, { protocolVersion: '2025-06-18', capabilities: { tools: { listChanged: true } }, serverInfo: { name: 'card-demo-mcp', version: '1.0.0' } });
   else if (message.method === 'tools/list') reply(message.id, { tools: tools() });
-  else if (message.method === 'tools/call') reply(message.id, { content: [{ type: 'text', text: `Demo result for ${message.params?.name}` }] });
+  else if (message.method === 'tools/call') {
+    const tool = tools().find((entry) => entry.name === message.params?.name);
+    reply(message.id, { content: [{ type: 'text', text: tool?.result ?? `Demo result for ${message.params?.name}` }] });
+  }
   else if (message.id !== undefined) reply(message.id, {});
 });

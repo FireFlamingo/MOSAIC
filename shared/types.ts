@@ -1,7 +1,7 @@
 export type ArtifactType = 'package' | 'skill' | 'mcp' | 'url';
 export type Decision = 'allow' | 'review' | 'deny';
 export type Integration = 'claude' | 'codex' | 'mcp-proxy' | 'registry-proxy';
-export interface RequestOrigin { agent: Integration; tool?: string; command?: string }
+export interface RequestOrigin { agent: Integration; tool?: string; command?: string; /** How long the caller waits for a human on a held request. */ waitSeconds?: number }
 export interface ArtifactRequest {
   type: ArtifactType;
   name: string;
@@ -85,6 +85,10 @@ export interface Evaluation {
   ruleDecision?: Decision;
   /** How the facts behind the score were obtained. Absent on records made before evidence lookups existed. */
   evidence?: EvidenceReport;
+  /** Layer 2: what earlier in the session pointed the agent to this artifact. */
+  chain?: { links: ChainLink[]; userRequested: boolean };
+  /** How much of the decision rests on verified evidence; an explained estimate, not a calibrated probability. */
+  confidence?: Confidence;
   /** Set when a single critical finding raised the threshold decision. */
   decisionFloor?: DecisionFloor;
   fingerprint?: string;
@@ -92,5 +96,8 @@ export interface Evaluation {
 }
 /** Something a tool returned during a session, recorded so later requests can be linked to what prompted them. */
 export interface Observation { id: string; at: string; sessionId: string; kind: 'user' | 'web' | 'file' | 'command' | 'mcp'; tool: string; text: string }
+/** Earlier content in the session that mentioned the requested artifact (Layer 2). */
+export interface ChainLink { observationId: string; kind: Observation['kind']; tool: string; at: string; instruction: boolean; external: boolean; excerpt: string }
+export interface Confidence { value: number; level: 'low' | 'medium' | 'high'; reasons: string[] }
 export interface Scenario { id: string; title: string; description: string; requests: ArtifactRequest[] }
 export interface AppState { evaluations: Evaluation[]; policy: Policy; scenarios: Scenario[]; rules: MemoryRule[] }

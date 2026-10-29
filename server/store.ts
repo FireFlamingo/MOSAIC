@@ -6,6 +6,7 @@ import { defaultPolicy } from './engine.js';
 import { SCORING_VERSION } from '../shared/scoring.js';
 import { highSeveritySignals, ruleStatus } from '../shared/feedback.js';
 import { applyMemory, blockKeyOf, fingerprintOf, trustIdentityOf } from './memory.js';
+import { computeConfidence } from '../shared/confidence.js';
 import { Database } from './db.js';
 import { AUDIT_GENESIS, loadOrCreateSigningKey, sealEvent, type AuditEvent, type AuditExport } from './audit.js';
 
@@ -143,7 +144,7 @@ export class StateStore {
 
   async evaluate(
     request: ArtifactRequest,
-    assess: (request: ArtifactRequest, history: Evaluation[], policy: Policy) => { score: number; decision: Decision; signals: Signal[]; scoringVersion?: string; policySnapshot?: Policy; scoringBreakdown?: ScoringBreakdown },
+    assess: (request: ArtifactRequest, history: Evaluation[], policy: Policy, observations: Observation[]) => { score: number; decision: Decision; signals: Signal[]; scoringVersion?: string; policySnapshot?: Policy; scoringBreakdown?: ScoringBreakdown; chain?: Evaluation['chain'] },
     now: Date = new Date(),
     evidence?: EvidenceReport,
   ): Promise<Evaluation> {
@@ -151,12 +152,13 @@ export class StateStore {
       const started = performance.now();
       // The engine only reads recent history from the same session, so only that is handed over.
       const history = structuredClone((this.bySession.get(request.sessionId) ?? []).slice(-SESSION_HISTORY));
-      const result = assess(request, history, this.policy());
+      const result = assess(request, history, this.policy(), this.observations(request.sessionId));
       const fingerprint = fingerprintOf(request);
       const { decision, memory } = applyMemory({ request, fingerprint, signals: result.signals, ruleDecision: result.decision, rules: this.rules, now });
       // ruleDecision, fingerprint and memory sit inside the hashed receipt, so editing which rule applied is detectable.
+      const confidence = computeConfidence({ request, evidence, score: result.score, decision, decisionFloor: (result as { decisionFloor?: Evaluation['decisionFloor'] }).decisionFloor, memory, policySnapshot: result.policySnapshot });
       return this.appendUnsafe({
-        request, ...result, ruleDecision: result.decision, decision, fingerprint, ...(memory ? { memory } : {}), ...(evidence ? { evidence } : {}),
+        request, ...result, ruleDecision: result.decision, decision, fingerprint, ...(memory ? { memory } : {}), ...(evidence ? { evidence } : {}), confidence,
         durationMs: Math.max(1, Math.round(performance.now() - started)),
       });
     });

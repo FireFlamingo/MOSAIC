@@ -174,7 +174,7 @@ async function decide(items: Extracted[], agent: Agent, payload: HookPayload, de
   const results: Array<{ evaluation: Evaluation; label: string }> = [];
   try {
     for (const item of items) {
-      const body: ArtifactRequest & { evidence: 'live' } = { ...item.request, sessionId: session, origin: { agent, tool, ...(command ? { command } : {}) }, evidence: 'live' };
+      const body: ArtifactRequest & { evidence: 'live' } = { ...item.request, sessionId: session, origin: { agent, tool, waitSeconds: Math.round(deps.reviewTimeoutMs / 1000), ...(command ? { command } : {}) }, evidence: 'live' };
       results.push({ evaluation: await call<Evaluation>(deps, '/api/evaluate', { method: 'POST', body: JSON.stringify(body) }), label: item.label });
     }
     const denied = results.find(({ evaluation }) => evaluation.decision === 'deny');

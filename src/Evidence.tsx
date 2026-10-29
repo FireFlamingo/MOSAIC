@@ -55,3 +55,38 @@ export function EvidencePanel({ evidence }: { evidence: EvidenceReport }) {
     </div>
   );
 }
+
+const KIND_LABEL = { user: "Your prompt", web: "Fetched page", file: "File read", command: "Command output", mcp: "MCP response" } as const;
+
+/** Layer 2: earlier content in the session that pointed the agent to this artifact. */
+export function ChainPanel({ chain }: { chain: NonNullable<import("../shared/types").Evaluation["chain"]> }) {
+  return (
+    <div className="inspector-section chain-panel">
+      <div className="subheading">
+        <h3>What led the agent here</h3>
+        <span>{chain.links.length} earlier {chain.links.length === 1 ? "mention" : "mentions"}</span>
+      </div>
+      {chain.userRequested && <p className="evidence-note">The user asked for this by name, so earlier mentions are not treated as injection.</p>}
+      <ol className="chain-list">
+        {chain.links.map((link) => (
+          <li key={link.observationId} className={link.instruction && link.external ? "external-instruction" : ""}>
+            <span>
+              <strong>{KIND_LABEL[link.kind]}</strong> · {link.tool} · {new Date(link.at).toLocaleTimeString()}
+              {link.instruction && <em>{link.external ? "told the agent to get it" : "local instruction"}</em>}
+            </span>
+            <q>{link.excerpt}</q>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+export function ConfidenceBadge({ confidence }: { confidence: import("../shared/types").Confidence }) {
+  return (
+    <div className={`confidence-badge ${confidence.level}`}>
+      <span>Confidence <strong>{confidence.level}</strong> · {confidence.value.toFixed(2)}</span>
+      <small>{confidence.reasons.join(" ")}</small>
+    </div>
+  );
+}

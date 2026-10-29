@@ -322,7 +322,8 @@ export default function App() {
   }
   const pending = state.evaluations.filter((e) => resolved(e) === "review");
   // Only requests an agent is still waiting on; timed-out ones were already blocked and stay in the review queue.
-  const waiting = pending.filter((e) => (e.request.origin?.agent === "claude" || e.request.origin?.agent === "codex") && clock - Date.parse(e.timestamp) < AGENT_WAIT_MS);
+  const waitMs = (e: Evaluation) => (e.request.origin?.waitSeconds ?? AGENT_WAIT_MS / 1000) * 1000;
+  const waiting = pending.filter((e) => (e.request.origin?.agent === "claude" || e.request.origin?.agent === "codex") && clock - Date.parse(e.timestamp) < waitMs(e));
   const counts = {
     allow: state.evaluations.filter((e) => resolved(e) === "allow").length,
     review: pending.length,
@@ -580,7 +581,7 @@ export default function App() {
             <div className="waiting-banner" role="status">
               <strong>{waiting.length === 1 ? `${agentLabel(waiting[0].request.origin!.agent)} is waiting for your decision` : `${waiting.length} agent actions are waiting for your decision`}</strong>
               {waiting.slice(0, 3).map((e) => {
-                const left = Math.max(0, Math.round((Date.parse(e.timestamp) + AGENT_WAIT_MS - clock) / 1000));
+                const left = Math.max(0, Math.round((Date.parse(e.timestamp) + waitMs(e) - clock) / 1000));
                 return (
                   <button key={e.id} onClick={() => inspect(e)}>
                     <span>{e.request.origin?.command ?? e.request.name}</span>

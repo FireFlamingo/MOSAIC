@@ -131,3 +131,17 @@
 .connected-agents i { width: 7px; height: 7px; border-radius: 50%; background: var(--allow-indicator); }
 .connected-agents small { flex-basis: 100%; padding-left: 13px; font-size: 10px; color: #8c8c8c; overflow-wrap: anywhere; }
 @media (max-width: 700px) { .waiting-banner button { grid-template-columns: minmax(0, 1fr); } }
+
+.confidence-badge { display: grid; gap: 3px; margin: -6px 0 16px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; background: #fafafa; }
+.confidence-badge small { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.confidence-badge.high strong { color: var(--allow); }
+.confidence-badge.medium strong { color: var(--amber); }
+.confidence-badge.low strong { color: var(--red); }
+.chain-list { margin: 0; padding-left: 18px; display: grid; gap: 10px; }
+.chain-list li { font-size: 12px; line-height: 1.5; }
+.chain-list li > span { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; color: var(--muted); }
+.chain-list li strong { color: var(--ink); }
+.chain-list em { font-style: normal; font-weight: 600; color: var(--amber); }
+.chain-list li.external-instruction em { color: var(--red); }
+.chain-list q { display: block; margin-top: 3px; padding: 6px 10px; background: #f7f7f7; border-left: 2px solid var(--line); font-family: var(--mono); font-size: 11px; overflow-wrap: anywhere; quotes: none; }
+.chain-list li.external-instruction q { border-left-color: var(--red); }

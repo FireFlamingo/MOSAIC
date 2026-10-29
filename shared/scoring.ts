@@ -42,6 +42,9 @@ export const SIGNAL_RULES = {
   'domain-lookalike': { label: 'Lookalike domain', severity: 'medium', group: 'transport', sources: ['typosquatting'] },
   'session-correlation': { label: 'Session correlation', severity: 'low', group: 'context', sources: ['injection', 'agent'] },
   'name-correlation': { label: 'Cross-artifact name reuse', severity: 'medium', group: 'context', sources: ['injection', 'hallucination'] },
+  'chain-external-instruction': { label: 'Instructed by external content', severity: 'medium', group: 'context', sources: ['injection'] },
+  'chain-local-instruction': { label: 'Instructed by local content', severity: 'low', group: 'context', sources: ['injection'] },
+  'chain-external-mention': { label: 'Introduced by external content', severity: 'low', group: 'context', sources: ['injection'] },
 } as const satisfies Record<string, { label: string; severity: Severity; group: EvidenceGroup; sources: readonly ScoringSource[] }>;
 export type SignalId = keyof typeof SIGNAL_RULES;
 
