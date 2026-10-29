@@ -3,14 +3,16 @@
  * Uses the real engine, store, and Express app against a temporary data directory.
  * Run with `npm run bench`, then `python scripts/plot_performance.py`.
  */
-import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { cpus, tmpdir, totalmem } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from '../server/index.js';
 import { defaultPolicy, evaluateRisk } from '../server/engine.js';
 import type { StateStore } from '../server/store.js';
+import { Database } from '../server/db.js';
+import { AUDIT_GENESIS, loadOrCreateSigningKey, sealEvent } from '../server/audit.js';
 import type { ArtifactRequest, ArtifactType, Evaluation } from '../shared/types.js';
 
 const OUT = fileURLToPath(new URL('../output/performance/results.json', import.meta.url));
@@ -75,19 +77,21 @@ async function endToEnd(directory: string, count: number) {
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
+  const state = store.exportAudit();
+  store.close();
   const bin = Math.max(1, Math.round(count / 25));
   const bins = [];
   for (let start = 0; start < latencies.length; start += bin) {
     const slice = latencies.slice(start, start + bin);
     bins.push({ storeSize: start + slice.length / 2, ...summary(slice) });
   }
-  return { bins, overall: summary(latencies), state: store.exportAudit() };
+  return { bins, overall: summary(latencies), state };
 }
 
 /** (c) The per-request steps StateStore performs, timed separately at the final store size. */
 /** HTTP round trip plus JSON parsing and validation, using a request rejected before the store. */
 async function httpOverhead(directory: string): Promise<number[]> {
-  const { app } = await createApp({ dataDir: directory, seed: false });
+  const { app, store } = await createApp({ dataDir: directory, seed: false });
   const server = app.listen(0, '127.0.0.1');
   await new Promise<void>((resolve) => server.once('listening', resolve));
   const address = server.address();
@@ -99,28 +103,33 @@ async function httpOverhead(directory: string): Promise<number[]> {
     return await timeAsync(1_000, send);
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
+    store.close();
   }
 }
 
 async function breakdown(state: ReturnType<StateStore['exportAudit']>, directory: string) {
-  const runs = 40;
+  const runs = 2_000;
   const evaluations: Evaluation[] = state.evaluations;
   const request = { ...samples.mcp, sessionId: 'bench-breakdown' };
-  const file = join(directory, 'breakdown.json');
+  const session = evaluations.filter((item) => item.request.sessionId === evaluations.at(-1)!.request.sessionId).slice(-20);
+  const keyDir = await mkdtemp(join(directory, 'key-'));
+  const { privateKey } = loadOrCreateSigningKey(keyDir);
+  const db = new Database(await mkdtemp(join(directory, 'db-')));
+  const event = { id: randomUUID(), timestamp: new Date().toISOString(), type: 'evaluation' as const, detail: { receipt: evaluations.at(-1)!.receipt } };
+  const sealed = sealEvent(event, AUDIT_GENESIS, privateKey);
   const steps = {
-    'Snapshot state (rollback copy)': time(runs, () => structuredClone(state)),
-    'Copy history for scoring': time(runs, () => structuredClone(evaluations)),
-    'Score request': time(runs * 50, () => evaluateRisk(request, evaluations, defaultPolicy)),
-    'Hash receipt (SHA-256)': time(runs * 50, () => createHash('sha256').update(`prev:${JSON.stringify(evaluations.at(-1))}`).digest('hex')),
-    'Serialize state to JSON': time(runs, () => JSON.stringify(state, null, 2)),
-    'Write and rename file': await timeAsync(runs, async () => { const temp = `${file}.tmp`; await writeFile(temp, JSON.stringify(state, null, 2), 'utf8'); await rename(temp, file); }),
+    'Copy session history (last 20)': time(runs, () => structuredClone(session)),
+    'Score request': time(runs, () => evaluateRisk(request, session, defaultPolicy)),
+    'Seal audit event (SHA-256 + Ed25519)': time(runs, () => sealEvent(event, AUDIT_GENESIS, privateKey)),
+    'SQLite transaction (2 inserts)': time(runs, () => db.transaction(() => {
+      db.run('INSERT INTO evaluations (id, session_id, body, review) VALUES (?, ?, ?, NULL)', randomUUID(), 'bench', JSON.stringify(evaluations.at(-1)));
+      db.run('INSERT INTO audit_events (id, body) VALUES (?, ?)', randomUUID(), JSON.stringify(sealed));
+    })),
     'HTTP round trip and parsing': await httpOverhead(await mkdtemp(join(directory, 'http-'))),
   };
-  // Serializing is timed on its own, so remove it from the write step.
-  const serializeP50 = quantile(steps['Serialize state to JSON'], 0.5);
+  db.close();
   const result = Object.fromEntries(Object.entries(steps).map(([label, values]) => [label, quantile(values, 0.5)]));
-  result['Write and rename file'] = Math.max(0, result['Write and rename file'] - serializeP50);
-  return { storeSize: evaluations.length, stateBytes: Buffer.byteLength(JSON.stringify(state, null, 2)), stepsP50Ms: result };
+  return { storeSize: evaluations.length, storage: 'SQLite (node:sqlite, WAL)', stepsP50Ms: result };
 }
 
 const directory = await mkdtemp(join(tmpdir(), 'card-bench-'));

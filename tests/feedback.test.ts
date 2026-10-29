@@ -26,6 +26,7 @@ async function withStore(fn: (store: StateStore, base: string) => Promise<void>)
   const base = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
   try { await fn(store, base); } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+    store.close();
     await rm(directory, { recursive: true, force: true });
   }
 }

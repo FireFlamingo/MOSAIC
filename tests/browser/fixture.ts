@@ -8,7 +8,7 @@ import { createApp } from '../../server/index';
 export const test = base.extend({
   baseURL: async ({}, use) => {
     const directory = await mkdtemp(join(tmpdir(), 'card-browser-'));
-    const { app } = await createApp({ dataDir: directory });
+    const { app, store } = await createApp({ dataDir: directory });
     const server = app.listen(0, '127.0.0.1');
     await once(server, 'listening');
     const address = server.address();
@@ -16,6 +16,7 @@ export const test = base.extend({
     try { await use(`http://127.0.0.1:${address.port}`); }
     finally {
       await new Promise<void>((done, reject) => server.close(error => error ? reject(error) : done()));
+      store.close();
       if (dirname(resolve(directory)) !== resolve(tmpdir()) || !basename(directory).startsWith('card-browser-')) throw new Error('Unexpected test data path');
       await rm(directory, { recursive: true, force: true });
     }

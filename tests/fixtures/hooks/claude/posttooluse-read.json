@@ -1,0 +1,28 @@
+{
+  "session_id": "96a141d5-6e3d-4ee4-9a75-ed61c32f0226",
+  "transcript_path": "C:\\Users\\USER\\.claude\\projects\\D--TY-Sem-V-EDI-card-demo-workspace\\96a141d5-6e3d-4ee4-9a75-ed61c32f0226.jsonl",
+  "cwd": "D:\\TY\\Sem V\\EDI\\card-demo-workspace",
+  "scratchpad_dir": "C:\\Users\\USER\\AppData\\Local\\Temp\\claude\\D--TY-Sem-V-EDI-card-demo-workspace\\96a141d5-6e3d-4ee4-9a75-ed61c32f0226\\scratchpad",
+  "prompt_id": "fc2c06b7-e056-4e4a-bc64-a600c61ecc5c",
+  "permission_mode": "default",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Read",
+  "tool_input": {
+    "file_path": "D:\\TY\\Sem V\\EDI\\card-demo-workspace\\README.md"
+  },
+  "tool_response": {
+    "type": "text",
+    "file": {
+      "filePath": "D:\\TY\\Sem V\\EDI\\card-demo-workspace\\README.md",
+      "content": "# CARD demo workspace\n\nA small sample project. Coding agents (Claude Code, Codex) run here with CARD installed, so their package installs, fetches, skill loads and MCP calls are checked before they happen.\n",
+      "numLines": 4,
+      "startLine": 1,
+      "totalLines": 4
+    }
+  },
+  "tool_use_id": "toolu_01MRkoS8XWRk3mqPQtemRuqX",
+  "duration_ms": 11
+}

@@ -96,7 +96,7 @@ ax.scatter([size[-1]], [med[-1]], s=30, color=INK, edgecolor="white", linewidth=
 ax.annotate(f"{med[-1]:.0f} ms", xy=(size[-1], med[-1]), xytext=(6, 0), textcoords="offset points",
             fontsize=8.5, color=INK, va="center", fontweight="bold")
 slope = np.polyfit(size, med, 1)[0] * 1000
-ax.text(0.03, 0.93, f"Median grows ≈ {slope:.1f} ms per 1,000 stored records",
+ax.text(0.03, 0.93, (f"Median grows ≈ {slope:.1f} ms per 1,000 stored records" if slope >= 0.1 else "Median stays flat as the store grows"),
         transform=ax.transAxes, fontsize=8, color=MUTED, va="top")
 store_size = data["method"]["storeSize"]
 ax.set_xlim(0, store_size * 1.08)
@@ -130,7 +130,7 @@ ax.set_xlabel("Median time per request (ms)")
 ax.spines["left"].set_visible(False)
 hgrid(ax, "x")
 panel_title(ax, "c", f"Where the time goes at {brk['storeSize']:,} stored evaluations",
-            f"Median of each step timed in isolation; state file {brk['stateBytes'] / 2**20:.1f} MB. Percentages are of the summed steps.", x=0.03)
+            f"Median of each step timed in isolation; storage: {brk.get('storage', 'JSON file')}. Percentages are of the summed steps.", x=0.03)
 
 env = data["environment"]
 fig.text(0.03, 0.022,
