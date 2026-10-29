@@ -54,6 +54,9 @@ import { EvaluationDialog } from "./EvaluationDialog";
 import { PolicyEditor } from "./PolicyEditor";
 import { FeedbackView, type ReviewSubmission } from "./Feedback";
 import { SignIn, type AuthStatus } from "./SignIn";
+/** How long an agent hook waits for a human before blocking (CARD_REVIEW_TIMEOUT_S default). */
+const AGENT_WAIT_MS = 120_000;
+const agentLabel = (agent: string) => ({ claude: "Claude Code", codex: "Codex", "mcp-proxy": "MCP proxy", "registry-proxy": "Registry proxy" } as Record<string, string>)[agent] ?? agent;
 type View = "Overview" | "Requests" | "Review queue" | "Trust & feedback" | "Policy";
 const views = [
   { label: "Overview" as View, icon: Layers3 },
@@ -76,6 +79,7 @@ export default function App() {
     [busy, setBusy] = useState(false);
   const [auth, setAuth] = useState<AuthStatus>({ configured: true, unlocked: false });
   const [signIn, setSignIn] = useState(false);
+  const [integrations, setIntegrations] = useState<Array<{ agent: string; workspace: string; lastSeen: string }>>([]);
   const [notice, setNotice] = useState(""),
     [synced, setSynced] = useState("");
   const [query, setQuery] = useState(""),
@@ -109,6 +113,8 @@ export default function App() {
       setSelected((current) => current ? data.evaluations.find((e) => e.id === current.id) ?? null : null);
       const status = await fetch("/api/auth/status", { signal: AbortSignal.timeout(10000) });
       if (status.ok) setAuth(await status.json());
+      const connected = await fetch("/api/integrations", { signal: AbortSignal.timeout(10000) });
+      if (connected.ok) setIntegrations(await connected.json());
       setOnline(true);
       setSynced(new Date().toISOString());
     } catch {
@@ -122,6 +128,24 @@ export default function App() {
   useEffect(() => {
     void load();
   }, [load]);
+  // Live updates: the server announces every committed change, so agent requests appear without refreshing.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let source: EventSource | undefined;
+    try {
+      source = new EventSource("/api/events");
+      source.onmessage = () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => void load(), 250);
+      };
+    } catch { /* live updates unavailable; manual refresh still works */ }
+    return () => { clearTimeout(timer); source?.close(); };
+  }, [load]);
+  const [clock, setClock] = useState(Date.now());
+  useEffect(() => {
+    const tick = setInterval(() => setClock(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, []);
   useEffect(() => {
     if (sessionFocus && view === "Overview") {
       sessionChooser.current?.focus();
@@ -297,6 +321,8 @@ export default function App() {
     }
   }
   const pending = state.evaluations.filter((e) => resolved(e) === "review");
+  // Only requests an agent is still waiting on; timed-out ones were already blocked and stay in the review queue.
+  const waiting = pending.filter((e) => (e.request.origin?.agent === "claude" || e.request.origin?.agent === "codex") && clock - Date.parse(e.timestamp) < AGENT_WAIT_MS);
   const counts = {
     allow: state.evaluations.filter((e) => resolved(e) === "allow").length,
     review: pending.length,
@@ -382,6 +408,16 @@ export default function App() {
           </span>
           <span className="workspace-dot" />
         </div>
+        {integrations.length > 0 && (
+          <div className="connected-agents">
+            <p className="nav-caption">CONNECTED AGENTS</p>
+            {integrations.map((item) => (
+              <span key={`${item.agent}${item.workspace}`} title={item.workspace}>
+                <i />{agentLabel(item.agent)}<small>{item.workspace.replace(/^.*[\/]/, "")} · {Math.max(0, Math.round((clock - Date.parse(item.lastSeen)) / 60000))}m ago</small>
+              </span>
+            ))}
+          </div>
+        )}
         <p className="nav-caption">WORKSPACE</p>
         <nav>
           {views.map((item) => (
@@ -540,6 +576,21 @@ export default function App() {
               </button>
             </div>
           </div>
+          {waiting.length > 0 && (
+            <div className="waiting-banner" role="status">
+              <strong>{waiting.length === 1 ? `${agentLabel(waiting[0].request.origin!.agent)} is waiting for your decision` : `${waiting.length} agent actions are waiting for your decision`}</strong>
+              {waiting.slice(0, 3).map((e) => {
+                const left = Math.max(0, Math.round((Date.parse(e.timestamp) + AGENT_WAIT_MS - clock) / 1000));
+                return (
+                  <button key={e.id} onClick={() => inspect(e)}>
+                    <span>{e.request.origin?.command ?? e.request.name}</span>
+                    <small>{Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")} left, then it is blocked</small>
+                    <em>Review now</em>
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {!online && !loading && (
             <div className="offline-banner">
               <CircleAlert size={17} />
@@ -924,10 +975,13 @@ export default function App() {
                                 >
                                   <ArtifactIcon type={e.request.type} />
                                   <span>
-                                    <strong>{e.request.name}</strong>
+                                    <strong>
+                                      {e.request.name}
+                                      {e.request.origin && <span className={`agent-chip ${e.request.origin.agent}`}>{agentLabel(e.request.origin.agent)}</span>}
+                                    </strong>
                                     <small>
-                                      {e.request.source ||
-                                        shortSession(e.request.sessionId)}
+                                      {e.request.origin?.command ?? (e.request.source ||
+                                        shortSession(e.request.sessionId))}
                                     </small>
                                   </span>
                                 </button>

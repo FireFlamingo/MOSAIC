@@ -11,7 +11,8 @@
     "test:browser": "npm run build && playwright test",
     "verify:audit": "tsx scripts/verify-audit.ts",
     "bench": "tsx scripts/benchmark.ts",
-    "check": "npm run test && npm run build"
+    "check": "npm run test && npm run build",
+    "card": "tsx scripts/card.ts"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",

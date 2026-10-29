@@ -122,7 +122,7 @@ export function evaluateRisk(
   const indicators: Array<[SignalId, RegExp, string]> = [
     ['obfuscated-content', /(?:fromcharcode|\\\\x[0-9a-f]{2}|base64\s*,\s*['\"]|atob\s*\()/i, 'Static content contains an encoding or obfuscation marker. Encoding also occurs in benign code.'],
     ['credential-access', /(?:process\.env|\.npmrc|aws_access_key|private[_ -]?key|authorization:\s*bearer)/i, 'Static content references an environment variable or credential-bearing location. The match does not establish secret theft.'],
-    ['remote-payload', /(?:curl\s+[^\n]+\|\s*(?:sh|bash)|wget\s+[^\n]+\|\s*(?:sh|bash)|invoke-webrequest.+\|)/i, 'Static content includes a shell-piped remote download pattern. This can execute unreviewed remote code, but the MVP does not run it or establish intent.'],
+    ['remote-payload', /(?:curl\s+[^\n]+\|\s*(?:sh|bash)|wget\s+[^\n]+\|\s*(?:sh|bash)|invoke-webrequest.+\||\b(?:iwr|irm|invoke-restmethod)\b[^\n]*\|\s*(?:iex|invoke-expression)\b)/i, 'Static content includes a shell-piped remote download pattern. This can execute unreviewed remote code, but the MVP does not run it or establish intent.'],
   ];
   for (const [id, pattern, reason] of indicators) {
     if (pattern.test(content)) signals.push(signal(id, reason));

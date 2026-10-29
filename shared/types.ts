@@ -1,5 +1,7 @@
 export type ArtifactType = 'package' | 'skill' | 'mcp' | 'url';
 export type Decision = 'allow' | 'review' | 'deny';
+export type Integration = 'claude' | 'codex' | 'mcp-proxy' | 'registry-proxy';
+export interface RequestOrigin { agent: Integration; tool?: string; command?: string }
 export interface ArtifactRequest {
   type: ArtifactType;
   name: string;
@@ -8,6 +10,8 @@ export interface ArtifactRequest {
   content?: string;
   /** Package registry, when known. Without it, package names are compared against every registry's reference list. */
   ecosystem?: 'npm' | 'pypi';
+  /** Which integration observed the request. Not part of the version fingerprint. */
+  origin?: RequestOrigin;
   metadata?: { exists?: boolean; ageDays?: number; downloads?: number; signed?: boolean; permissions?: string[]; resolvedAddresses?: string[] };
 }
 /** Where one fact came from: looked up by CARD, typed by the caller, or not established. */
@@ -86,5 +90,7 @@ export interface Evaluation {
   fingerprint?: string;
   memory?: MemoryOutcome;
 }
+/** Something a tool returned during a session, recorded so later requests can be linked to what prompted them. */
+export interface Observation { id: string; at: string; sessionId: string; kind: 'user' | 'web' | 'file' | 'command' | 'mcp'; tool: string; text: string }
 export interface Scenario { id: string; title: string; description: string; requests: ArtifactRequest[] }
 export interface AppState { evaluations: Evaluation[]; policy: Policy; scenarios: Scenario[]; rules: MemoryRule[] }

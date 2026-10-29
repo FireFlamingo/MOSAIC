@@ -356,3 +356,14 @@ test('verdicts need the signed-in reviewer, and signing in from the panel works'
   await expect(dialog.getByText('Human review · Allowed')).toBeVisible();
   await expect(dialog.locator('.feedback-facts')).toContainText('Tester');
 });
+
+test('agent requests appear live with a waiting banner, without refreshing', async ({ page }) => {
+  await expect(page.locator('.waiting-banner')).toHaveCount(0);
+  const response = await page.request.post('/api/evaluate', { data: { type: 'package', name: 'left-padx', sessionId: 'claude:live-test', metadata: { exists: true, signed: true, permissions: ['secrets:read'] }, origin: { agent: 'claude', tool: 'Bash', command: 'npm install left-padx' } } });
+  expect(response.status()).toBe(201);
+  const banner = page.locator('.waiting-banner');
+  await expect(banner).toContainText('Claude Code is waiting for your decision');
+  await expect(banner).toContainText('npm install left-padx');
+  await expect(banner).toContainText(/\d:\d\d left/);
+  await expect(page.locator('.agent-chip.claude').first()).toBeVisible();
+});

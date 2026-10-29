@@ -116,3 +116,18 @@
 .signin-modal .form-field { margin-bottom: 12px; }
 .feedback-signed-in { font-size: 12px; color: var(--muted); }
 .link-button { border: 0; background: none; padding: 0; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+
+.waiting-banner { display: grid; gap: 8px; margin: 0 0 18px; padding: 14px 16px; border: 1px solid #f0e6c8; background: #fcf7e9; border-radius: 6px; color: #7d6f4c; }
+.waiting-banner strong { font-size: 13px; color: var(--amber); }
+.waiting-banner button { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; text-align: left; padding: 9px 12px; border: 1px solid #f0e6c8; background: #fff; border-radius: 4px; cursor: pointer; color: var(--ink); font-size: 12px; }
+.waiting-banner button span { font-family: var(--mono); overflow-wrap: anywhere; }
+.waiting-banner button small { color: var(--amber); font-variant-numeric: tabular-nums; }
+.waiting-banner button em { font-style: normal; font-weight: 600; color: var(--orange); }
+.agent-chip { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 3px; font: 600 9px var(--mono); letter-spacing: 0.4px; text-transform: uppercase; vertical-align: middle; border: 1px solid var(--line); color: #555; background: #f6f6f6; }
+.agent-chip.claude { color: #9a4a26; background: #fff0e8; border-color: #f3d2c0; }
+.agent-chip.codex { color: #2a5a7a; background: #eaf3fa; border-color: #c7dcea; }
+.connected-agents { display: grid; gap: 6px; margin: 0 0 14px; }
+.connected-agents span { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px; font-size: 12px; color: #d8d8d8; }
+.connected-agents i { width: 7px; height: 7px; border-radius: 50%; background: var(--allow-indicator); }
+.connected-agents small { flex-basis: 100%; padding-left: 13px; font-size: 10px; color: #8c8c8c; overflow-wrap: anywhere; }
+@media (max-width: 700px) { .waiting-banner button { grid-template-columns: minmax(0, 1fr); } }

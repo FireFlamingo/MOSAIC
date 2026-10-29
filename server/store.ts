@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
-import type { AppState, ArtifactRequest, Decision, Evaluation, EvidenceReport, FeedbackReason, HumanReview, MemoryRule, Policy, RuleRevocationCause, Scenario, Signal, ScoringBreakdown } from '../shared/types.js';
+import type { AppState, ArtifactRequest, Decision, Evaluation, EvidenceReport, FeedbackReason, Observation, HumanReview, MemoryRule, Policy, RuleRevocationCause, Scenario, Signal, ScoringBreakdown } from '../shared/types.js';
 import { defaultPolicy } from './engine.js';
 import { SCORING_VERSION } from '../shared/scoring.js';
 import { highSeveritySignals, ruleStatus } from '../shared/feedback.js';
@@ -74,6 +74,30 @@ export class StateStore {
   }
 
   close() { this.db?.close(); }
+
+  private listeners = new Set<() => void>();
+  /** Called after every committed change; used for live dashboard updates. */
+  onChange(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => { this.listeners.delete(listener); };
+  }
+
+  /** Instruction files scanned when this session started. */
+  startup(sessionId: string): Evaluation[] {
+    return structuredClone((this.bySession.get(sessionId) ?? []).filter((evaluation) => evaluation.request.origin?.tool === 'SessionStart'));
+  }
+
+  /** What tools returned during a session (web pages, files, command output). Inputs to chain analysis, kept locally. */
+  addObservation(observation: { sessionId: string; kind: Observation['kind']; tool: string; text: string }): Observation {
+    const stored: Observation = { id: randomUUID(), at: new Date().toISOString(), ...observation };
+    this.db.run('INSERT INTO observations (id, session_id, body) VALUES (?, ?, ?)', stored.id, stored.sessionId, JSON.stringify(stored));
+    return stored;
+  }
+
+  observations(sessionId: string, limit = 50): Observation[] {
+    return this.db.all('SELECT body FROM observations WHERE session_id = ? ORDER BY seq DESC LIMIT ?', sessionId, limit)
+      .map((row) => JSON.parse(row.body as string) as Observation).reverse();
+  }
 
   /** Registry lookups are cached so repeated installs do not hit the network; not part of the audit log. */
   readonly evidenceCache = {
@@ -234,6 +258,7 @@ export class StateStore {
         const result = await change();
         const changes = this.pending;
         this.db.transaction(() => { for (const item of changes) this.write(item); });
+        if (changes.length) for (const listener of this.listeners) listener();
         return result;
       } catch (error) {
         for (const item of this.pending) if (item.kind === 'review') delete item.evaluation.review;

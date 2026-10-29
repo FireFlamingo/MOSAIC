@@ -10,3 +10,4 @@ playwright-report/
 tmp/
 __pycache__/
 *.pyc
+dist-adapters/

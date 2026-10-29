@@ -12,6 +12,8 @@ import { ReviewerAuth } from './auth.js';
 import { StateStore, type ReviewInput } from './store.js';
 
 const TYPES = new Set(['package', 'skill', 'mcp', 'url']);
+const INTEGRATIONS = new Set(['claude', 'codex', 'mcp-proxy', 'registry-proxy']);
+const OBSERVATION_KINDS = new Set(['user', 'web', 'file', 'command', 'mcp']);
 const PERMISSIONS = new Set(['read:workspace', 'filesystem:write', 'network:egress', 'secrets:read', 'calendar:read', 'calendar:write']);
 const MAX_TEXT = 4_000;
 
@@ -27,6 +29,13 @@ function validateRequest(value: unknown): ArtifactRequest | undefined {
   if (value.source !== undefined && !isText(value.source, 1_500)) return undefined;
   if (value.content !== undefined && (typeof value.content !== 'string' || value.content.length > MAX_TEXT)) return undefined;
   if (value.ecosystem !== undefined && value.ecosystem !== 'npm' && value.ecosystem !== 'pypi') return undefined;
+  let origin: ArtifactRequest['origin'];
+  if (value.origin !== undefined) {
+    if (!isObject(value.origin) || !INTEGRATIONS.has(value.origin.agent as string)) return undefined;
+    if (value.origin.tool !== undefined && !isText(value.origin.tool, 80)) return undefined;
+    if (value.origin.command !== undefined && !isText(value.origin.command, 1_000)) return undefined;
+    origin = { agent: value.origin.agent as NonNullable<ArtifactRequest['origin']>['agent'], ...(value.origin.tool ? { tool: value.origin.tool as string } : {}), ...(value.origin.command ? { command: value.origin.command as string } : {}) };
+  }
   let metadata: ArtifactRequest['metadata'];
   if (value.metadata !== undefined) {
     if (!isObject(value.metadata)) return undefined;
@@ -37,7 +46,7 @@ function validateRequest(value: unknown): ArtifactRequest | undefined {
     if (item.permissions !== undefined && (!Array.isArray(item.permissions) || item.permissions.length > 12 || item.permissions.some((p) => typeof p !== 'string' || !PERMISSIONS.has(p)))) return undefined;
     metadata = { exists: item.exists as boolean | undefined, signed: item.signed as boolean | undefined, ageDays: item.ageDays as number | undefined, downloads: item.downloads as number | undefined, permissions: item.permissions as string[] | undefined };
   }
-  return { type: value.type as ArtifactRequest['type'], name: value.name.trim(), sessionId: value.sessionId.trim(), source: value.source as string | undefined, content: value.content as string | undefined, ...(value.ecosystem ? { ecosystem: value.ecosystem as 'npm' | 'pypi' } : {}), metadata };
+  return { type: value.type as ArtifactRequest['type'], name: value.name.trim(), sessionId: value.sessionId.trim(), source: value.source as string | undefined, content: value.content as string | undefined, ...(value.ecosystem ? { ecosystem: value.ecosystem as 'npm' | 'pypi' } : {}), ...(origin ? { origin } : {}), metadata };
 }
 
 function validatePolicy(value: unknown): Policy | undefined {
@@ -118,6 +127,31 @@ export async function createApp(options: AppOptions = {}): Promise<CardApp> {
   app.get('/api/state', (_req, res) => res.json(store.appState()));
   app.get('/api/export', (_req, res) => res.type('application/json').send(store.exportAudit()));
   app.get('/api/auth/status', (req, res) => res.json(auth.status(req)));
+  app.get('/api/evaluations/:id', (req, res) => {
+    const evaluation = store.get(String(req.params.id));
+    return evaluation ? res.json(evaluation) : res.status(404).json({ error: 'Evaluation not found' });
+  });
+  app.get('/api/sessions/:id/startup', (req, res) => res.json(store.startup(String(req.params.id))));
+  app.post('/api/observations', (req, res) => {
+    const body = req.body;
+    if (!isObject(body) || !isText(body.sessionId, 200) || !OBSERVATION_KINDS.has(body.kind as string) || !isText(body.tool, 80) || typeof body.text !== 'string') return res.status(400).json({ error: 'Invalid observation' });
+    return res.status(201).json(store.addObservation({ sessionId: body.sessionId, kind: body.kind as 'user', tool: body.tool, text: body.text.slice(0, 20_000) }));
+  });
+  const integrations = new Map<string, { agent: string; workspace: string; lastSeen: string }>();
+  app.post('/api/heartbeat', (req, res) => {
+    if (!isObject(req.body) || !INTEGRATIONS.has(req.body.agent as string) || !isText(req.body.workspace, 500)) return res.status(400).json({ error: 'Invalid heartbeat' });
+    const entry = { agent: req.body.agent as string, workspace: req.body.workspace as string, lastSeen: new Date().toISOString() };
+    integrations.set(`${entry.agent}|${entry.workspace}`, entry);
+    return res.json(entry);
+  });
+  app.get('/api/integrations', (_req, res) => res.json([...integrations.values()]));
+  app.get('/api/events', (req, res) => {
+    res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
+    res.write('retry: 2000\n\n');
+    const stop = store.onChange(() => res.write('data: changed\n\n'));
+    const ping = setInterval(() => res.write(': ping\n\n'), 25_000);
+    req.on('close', () => { stop(); clearInterval(ping); });
+  });
   app.post('/api/auth/setup', (req, res) => auth.setup(req, res));
   app.post('/api/auth/unlock', (req, res) => auth.unlock(req, res));
   app.post('/api/auth/lock', (req, res) => auth.lock(req, res));
