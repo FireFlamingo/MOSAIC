@@ -1,12 +1,12 @@
 /**
- * Refreshes shared/data/popular-packages.json, the reference list for the lookalike check.
+ * Refreshes shared/reference/popular-packages.json, the reference list for the lookalike check.
  * Run with `npx tsx scripts/update-popular-packages.ts`. Needs network access.
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const OUT = fileURLToPath(new URL('../shared/data/popular-packages.json', import.meta.url));
+const OUT = fileURLToPath(new URL('../shared/reference/popular-packages.json', import.meta.url));
 const LIMIT = 2_000;
 const NPM_SOURCE = 'https://cdn.jsdelivr.net/npm/npm-high-impact@1.13.0/lib/top-download.js';
 const PYPI_SOURCE = 'https://hugovk.dev/top-pypi-packages/top-pypi-packages-30-days.min.json';

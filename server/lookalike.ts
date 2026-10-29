@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { normalizeName, packageBaseName } from '../shared/names.js';
 
-/** Reference lists of real, popular names (see shared/data/popular-packages.json for sources and date). */
-const popular = JSON.parse(readFileSync(new URL('../shared/data/popular-packages.json', import.meta.url), 'utf8')) as { npm: string[]; pypi: string[] };
+/** Reference lists of real, popular names (see shared/reference/popular-packages.json for sources and date). */
+const popular = JSON.parse(readFileSync(new URL('../shared/reference/popular-packages.json', import.meta.url), 'utf8')) as { npm: string[]; pypi: string[] };
 
 /** Reference MCP servers from the official modelcontextprotocol/servers project and widely used vendor servers. */
 const KNOWN_MCP_SERVERS = [
