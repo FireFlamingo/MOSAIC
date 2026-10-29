@@ -21,7 +21,6 @@ export interface ReviewSubmission {
   decision: "allow" | "deny";
   note: string;
   reason: FeedbackReason;
-  reviewer: string;
   remember: boolean;
   expiresInDays?: number;
 }
@@ -29,13 +28,6 @@ export interface ReviewSubmission {
 const date = (stamp: string) => new Date(stamp).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
 const signalLabel = (id: string) => SIGNAL_RULES[id as keyof typeof SIGNAL_RULES]?.label ?? id;
 const percent = (value: number | null) => (value === null ? "—" : `${Math.round(value * 100)}%`);
-const REVIEWER_KEY = "card-reviewer";
-function storedReviewer() {
-  try { return localStorage.getItem(REVIEWER_KEY) ?? ""; } catch { return ""; }
-}
-function storeReviewer(name: string) {
-  try { localStorage.setItem(REVIEWER_KEY, name); } catch { /* storage unavailable */ }
-}
 
 /** Explains how decision memory changed (or did not change) this evaluation. */
 export function MemoryNotice({ evaluation }: { evaluation: Evaluation }) {
@@ -135,17 +127,20 @@ export function FeedbackPanel({
   evaluation,
   rules,
   blocked,
+  reviewer,
+  onSignIn,
   onSubmit,
 }: {
   evaluation: Evaluation;
   rules: MemoryRule[];
   blocked: boolean;
+  reviewer?: string;
+  onSignIn: () => void;
   onSubmit: (input: ReviewSubmission) => Promise<void>;
 }) {
   const [verdict, setVerdict] = useState<"allow" | "deny" | "">("");
   const [reason, setReason] = useState<FeedbackReason | "">("");
   const [note, setNote] = useState("");
-  const [reviewer, setReviewer] = useState(storedReviewer);
   const [remember, setRemember] = useState(false);
   const [days, setDays] = useState<number>(DEFAULT_TRUST_DAYS);
   useEffect(() => {
@@ -172,7 +167,7 @@ export function FeedbackPanel({
   const blockUnavailable = !evaluation.fingerprint ? "Recorded before decision memory existed. Submit it again to block it." : "";
   const unavailable = verdict === "allow" ? trustUnavailable : verdict === "deny" ? blockUnavailable : "";
   const endsTrust = verdict === "deny" && evaluation.memory?.applied?.effect === "trust";
-  const ready = verdict && reason && note.trim() && reviewer.trim() && !blocked && !(remember && unavailable);
+  const ready = verdict && reason && note.trim() && reviewer && !blocked && !(remember && unavailable);
   const submitLabel = held ? (verdict === "deny" ? "Deny request" : "Allow request") : "Save feedback";
 
   return (
@@ -181,9 +176,8 @@ export function FeedbackPanel({
       onSubmit={(event) => {
         event.preventDefault();
         if (!ready || !verdict || !reason) return;
-        storeReviewer(reviewer.trim());
         void onSubmit({
-          decision: verdict, reason, note: note.trim(), reviewer: reviewer.trim(),
+          decision: verdict, reason, note: note.trim(),
           remember, ...(verdict === "allow" && remember ? { expiresInDays: days } : {}),
         });
       }}
@@ -242,10 +236,9 @@ export function FeedbackPanel({
       )}
       <label className="sr-only" htmlFor="review-note">Reviewer note</label>
       <textarea id="review-note" maxLength={500} placeholder="Explain your decision…" value={note} onChange={(event) => setNote(event.target.value)} />
-      <label className="feedback-field" htmlFor="reviewer-name">
-        Your name
-        <input id="reviewer-name" maxLength={60} value={reviewer} onChange={(event) => setReviewer(event.target.value)} placeholder="Who is making this decision" />
-      </label>
+      {reviewer
+        ? <p className="feedback-signed-in">Recorded as <strong>{reviewer}</strong> (signed-in reviewer).</p>
+        : <p className="feedback-warning">Only a signed-in reviewer can give a verdict. <button type="button" className="link-button" onClick={onSignIn}>Sign in</button></p>}
       <div>
         <button className={`button ${verdict === "deny" ? "deny-button" : "approve-button"}`} type="submit" disabled={!ready}>
           {submitLabel}

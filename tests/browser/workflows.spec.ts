@@ -51,7 +51,6 @@ for (const decision of ['allow', 'deny'] as const) {
     await expect(resolve).toBeDisabled();
     await dialog.getByLabel('Reason').selectOption(decision === 'allow' ? 'expected-tool' : 'malicious');
     await dialog.getByRole('textbox', { name: 'Reviewer note' }).fill(`Browser verification: ${decision}`);
-    await dialog.getByLabel('Your name').fill('Browser reviewer');
     await resolve.click();
     await expect(dialog.getByText(`Human review · ${decision === 'allow' ? 'Allowed' : 'Denied'}`)).toBeVisible();
     await page.keyboard.press('Escape');
@@ -73,7 +72,6 @@ test('a remembered trust appears in Trust & feedback and can be revoked', async 
   await dialog.getByLabel('Reason').selectOption('expected-tool');
   await dialog.getByRole('checkbox', { name: 'Trust this exact version for later requests' }).check();
   await dialog.getByRole('textbox', { name: 'Reviewer note' }).fill('Internal mail tool');
-  await dialog.getByLabel('Your name').fill('Browser reviewer');
   await dialog.getByRole('button', { name: 'Allow request' }).click();
   await expect(dialog).toContainText('Trusted this exact version until');
   await expect(dialog).toContainText('False alarm (false positive)');
@@ -333,4 +331,28 @@ test('a rejected request keeps its draft and leaves the gateway usable', async (
   await page.unroute('**/api/evaluate');
   await page.getByRole('button', { name: 'Evaluate request' }).click();
   await expect(page.getByRole('dialog', { name: 'Evaluation details' })).toContainText('preserved-after-rejection');
+});
+
+test('verdicts need the signed-in reviewer, and signing in from the panel works', async ({ page }) => {
+  await page.getByRole('button', { name: 'Lock', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Sign in to review' })).toBeVisible();
+  await page.getByRole('button', { name: /Review queue/ }).click();
+  await page.locator('tbody').getByRole('button', { name: 'Inspect mail-triage-lab', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Evaluation details' });
+  await dialog.getByRole('radio', { name: /Allow · it is safe/ }).check();
+  await dialog.getByLabel('Reason').selectOption('expected-tool');
+  await dialog.getByRole('textbox', { name: 'Reviewer note' }).fill('Needs a person');
+  await expect(dialog.getByRole('button', { name: 'Allow request' })).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Sign in', exact: true }).click();
+  const signIn = page.getByRole('dialog', { name: 'Reviewer sign-in' });
+  await signIn.getByLabel('PIN').fill('wrong-pin-0');
+  await signIn.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(signIn).toContainText('Wrong PIN');
+  await signIn.getByLabel('PIN').fill('test-pin-1234');
+  await signIn.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByText('Reviewer · Tester')).toBeVisible();
+  await expect(dialog).toContainText('Recorded as Tester');
+  await dialog.getByRole('button', { name: 'Allow request' }).click();
+  await expect(dialog.getByText('Human review · Allowed')).toBeVisible();
+  await expect(dialog.locator('.feedback-facts')).toContainText('Tester');
 });

@@ -108,3 +108,11 @@
 .evidence-source.unverified { color: var(--muted); }
 .evidence-note, .evidence-sources { font-size: 11px; color: var(--muted); line-height: 1.6; margin: 8px 0 0; }
 .evidence-sources a { color: inherit; margin-right: 8px; }
+
+.reviewer-chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 6px 5px 10px; border: 1px solid var(--allow-border); background: var(--allow-soft); color: var(--allow); border-radius: 999px; font-size: 11px; font-weight: 600; }
+.reviewer-chip button { border: 0; background: #fff; color: var(--ink); border-radius: 999px; padding: 3px 9px; font-size: 11px; cursor: pointer; }
+.signin-button { padding: 6px 12px; font-size: 12px; }
+.signin-modal h2 { display: flex; align-items: center; gap: 8px; }
+.signin-modal .form-field { margin-bottom: 12px; }
+.feedback-signed-in { font-size: 12px; color: var(--muted); }
+.link-button { border: 0; background: none; padding: 0; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }

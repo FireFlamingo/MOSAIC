@@ -42,10 +42,14 @@ interface Props {
   onReview: (input: ReviewSubmission) => Promise<void>;
   onSubmit: (request: ArtifactRequest, live: boolean) => Promise<void>;
   rules: MemoryRule[];
+  reviewer?: string;
+  onSignIn: () => void;
 }
 export function EvaluationDialog({
   selected,
   rules,
+  reviewer,
+  onSignIn,
   blocked,
   busy,
   online,
@@ -293,7 +297,7 @@ export function EvaluationDialog({
             {selected.review ? (
               <FeedbackResult evaluation={selected} rules={rules} />
             ) : (
-              <FeedbackPanel evaluation={selected} rules={rules} blocked={blocked} onSubmit={onReview} />
+              <FeedbackPanel evaluation={selected} rules={rules} blocked={blocked} reviewer={reviewer} onSignIn={onSignIn} onSubmit={onReview} />
             )}
           </>
         ) : (

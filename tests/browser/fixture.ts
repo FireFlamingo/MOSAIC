@@ -4,11 +4,12 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createApp } from '../../server/index';
+import { TEST_REVIEWER } from '../helpers';
 
 export const test = base.extend({
   baseURL: async ({}, use) => {
     const directory = await mkdtemp(join(tmpdir(), 'card-browser-'));
-    const { app, store } = await createApp({ dataDir: directory });
+    const { app, store } = await createApp({ dataDir: directory, reviewer: TEST_REVIEWER });
     const server = app.listen(0, '127.0.0.1');
     await once(server, 'listening');
     const address = server.address();
@@ -22,6 +23,9 @@ export const test = base.extend({
     }
   },
   page: async ({ page }, use) => {
+    // Signs the browser in as the test reviewer; the session cookie is shared with the page.
+    const unlock = await page.request.post('/api/auth/unlock', { data: { pin: TEST_REVIEWER.pin } });
+    expect(unlock.status()).toBe(200);
     await page.goto('/');
     await expect(page.getByText('API reachable', { exact: true })).toBeVisible();
     await use(page);

@@ -9,15 +9,17 @@ import { createApp } from '../server/index.js';
 import { evaluateRisk } from '../server/engine.js';
 import type { ArtifactRequest } from '../shared/types.js';
 import { verifyEvaluations, verifyExport } from '../scripts/verify-audit.js';
+import { signIn, TEST_REVIEWER, useSession } from './helpers.js';
 
 async function withServer(fn: (base: string) => Promise<void>) {
   const directory = await mkdtemp(join(tmpdir(), 'card-api-'));
-  const { app, store } = await createApp({ dataDir: directory, seed: false });
+  const { app, store } = await createApp({ dataDir: directory, seed: false, reviewer: TEST_REVIEWER });
   const server = app.listen(0, '127.0.0.1');
   await new Promise<void>((resolve) => server.once('listening', resolve));
   const address = server.address();
   const base = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
-  try { await fn(base); } finally { await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())); store.close(); await rm(directory, { recursive: true, force: true }); }
+  const restore = useSession(base, await signIn(base));
+  try { await fn(base); } finally { restore(); await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())); store.close(); await rm(directory, { recursive: true, force: true }); }
 }
 
 const artifact: ArtifactRequest = { type: 'package', name: 'test-kit', sessionId: 'session-one', metadata: { exists: true, ageDays: 2, downloads: 12, signed: true, permissions: ['network:egress', 'secrets:read'] } };

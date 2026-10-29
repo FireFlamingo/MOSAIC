@@ -11,6 +11,7 @@ import type { ArtifactRequest, Evaluation, MemoryRule } from '../shared/types.js
 import { feedbackMetrics, feedbackOutcome, thresholdWhatIf } from '../shared/feedback.js';
 import { verifyEvaluations } from '../scripts/verify-audit.js';
 import { SCORING_VERSION } from '../shared/scoring.js';
+import { signIn, TEST_REVIEWER, useSession } from './helpers.js';
 
 // Medium-severity only (sensitive permissions), so it is held for review and may be trusted.
 const kit: ArtifactRequest = { type: 'package', name: 'test-kit', sessionId: 'first', source: 'registry://example.invalid', metadata: { exists: true, signed: true, permissions: ['network:egress', 'secrets:read'] } };
@@ -20,12 +21,14 @@ const DAY = 86_400_000;
 
 async function withStore(fn: (store: StateStore, base: string) => Promise<void>) {
   const directory = await mkdtemp(join(tmpdir(), 'card-feedback-'));
-  const { app, store } = await createApp({ dataDir: directory, seed: false });
+  const { app, store } = await createApp({ dataDir: directory, seed: false, reviewer: TEST_REVIEWER });
   const server = app.listen(0, '127.0.0.1');
   await new Promise<void>((resolve) => server.once('listening', resolve));
   const address = server.address();
   const base = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
+  const restore = useSession(base, await signIn(base));
   try { await fn(store, base); } finally {
+    restore();
     await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
     store.close();
     await rm(directory, { recursive: true, force: true });
@@ -171,11 +174,11 @@ test('validates review input at the API boundary', () => withStore(async (store,
   assert.equal((await post({ decision: 'allow', note: 'x', reason: 'nonsense' })).status, 400);
   assert.equal((await post({ decision: 'allow', note: 'x', remember: true, expiresInDays: 365 })).status, 400);
   assert.equal((await post({ decision: 'deny', note: 'x', remember: true, expiresInDays: 30 })).status, 400, 'blocks have no expiry');
-  const ok = await post({ decision: 'allow', note: 'x', reason: 'expected-tool', reviewer: 'Asha', remember: true, expiresInDays: 7 });
+  const ok = await post({ decision: 'allow', note: 'x', reason: 'expected-tool', reviewer: 'Someone else', remember: true, expiresInDays: 7 });
   assert.equal(ok.status, 200);
   const rule = store.appState().rules[0];
   assert.equal(Date.parse(rule.expiresAt!) - Date.parse(rule.createdAt), 7 * DAY);
-  assert.equal(rule.reviewer, 'Asha');
+  assert.equal(rule.reviewer, TEST_REVIEWER.name, 'the reviewer is the signed-in person, never a name in the request');
 }));
 
 test('applyMemory checks a block before trust and ignores revoked rules', () => {

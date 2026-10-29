@@ -53,6 +53,7 @@ import {
 import { EvaluationDialog } from "./EvaluationDialog";
 import { PolicyEditor } from "./PolicyEditor";
 import { FeedbackView, type ReviewSubmission } from "./Feedback";
+import { SignIn, type AuthStatus } from "./SignIn";
 type View = "Overview" | "Requests" | "Review queue" | "Trust & feedback" | "Policy";
 const views = [
   { label: "Overview" as View, icon: Layers3 },
@@ -73,6 +74,8 @@ export default function App() {
   const [loading, setLoading] = useState(true),
     [online, setOnline] = useState(false),
     [busy, setBusy] = useState(false);
+  const [auth, setAuth] = useState<AuthStatus>({ configured: true, unlocked: false });
+  const [signIn, setSignIn] = useState(false);
   const [notice, setNotice] = useState(""),
     [synced, setSynced] = useState("");
   const [query, setQuery] = useState(""),
@@ -104,6 +107,8 @@ export default function App() {
       const data: AppState = await response.json();
       setState({ ...data, evaluations: latest(data.evaluations) });
       setSelected((current) => current ? data.evaluations.find((e) => e.id === current.id) ?? null : null);
+      const status = await fetch("/api/auth/status", { signal: AbortSignal.timeout(10000) });
+      if (status.ok) setAuth(await status.json());
       setOnline(true);
       setSynced(new Date().toISOString());
     } catch {
@@ -173,6 +178,10 @@ export default function App() {
       });
       const body = await response.json();
       if (!response.ok) {
+        if (response.status === 401) {
+          setAuth((current) => ({ ...current, unlocked: false, reviewer: undefined }));
+          setSignIn(true);
+        }
         setNotice(body.error || "The request could not be completed.");
         return null;
       }
@@ -449,9 +458,16 @@ export default function App() {
             >
               <RefreshCw size={15} className={loading ? "spin" : ""} />
             </button>
-            <span className="local-avatar" title="Local workspace">
-              L
-            </span>
+            {auth.unlocked ? (
+              <span className="reviewer-chip">
+                Reviewer · {auth.reviewer}
+                <button onClick={() => void fetch("/api/auth/lock", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).then(() => setAuth({ configured: true, unlocked: false }))}>Lock</button>
+              </span>
+            ) : (
+              <button className="button secondary signin-button" onClick={() => setSignIn(true)}>
+                {auth.configured ? "Sign in to review" : "Set reviewer PIN"}
+              </button>
+            )}
           </div>
         </header>
         <main>
@@ -1150,6 +1166,19 @@ export default function App() {
           onReview={review}
           onSubmit={submit}
           rules={state.rules}
+          reviewer={auth.unlocked ? auth.reviewer : undefined}
+          onSignIn={() => setSignIn(true)}
+        />
+      )}
+      {signIn && (
+        <SignIn
+          status={auth}
+          onClose={() => setSignIn(false)}
+          onDone={(status) => {
+            setAuth(status);
+            setSignIn(false);
+            setNotice(`Signed in as ${status.reviewer}.`);
+          }}
         />
       )}
     </div>

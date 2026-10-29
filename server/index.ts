@@ -8,14 +8,16 @@ import { DEFAULT_TRUST_DAYS, FEEDBACK_REASONS, TRUST_EXPIRY_DAYS } from '../shar
 import { defaultPolicy, evaluateRisk } from './engine.js';
 import { scenarioById, scenarios } from './scenarios.js';
 import { withEvidence } from './evidence.js';
+import { ReviewerAuth } from './auth.js';
 import { StateStore, type ReviewInput } from './store.js';
 
 const TYPES = new Set(['package', 'skill', 'mcp', 'url']);
 const PERMISSIONS = new Set(['read:workspace', 'filesystem:write', 'network:egress', 'secrets:read', 'calendar:read', 'calendar:write']);
 const MAX_TEXT = 4_000;
 
-export interface AppOptions { dataDir?: string; seed?: boolean }
-export interface CardApp { app: Express; store: StateStore }
+/** `reviewer` presets a reviewer PIN (used by tests and scripted setup); otherwise first-time setup needs the console code. */
+export interface AppOptions { dataDir?: string; seed?: boolean; reviewer?: { name: string; pin: string } }
+export interface CardApp { app: Express; store: StateStore; auth: ReviewerAuth }
 
 function isObject(value: unknown): value is Record<string, unknown> { return Boolean(value) && typeof value === 'object' && !Array.isArray(value); }
 function isText(value: unknown, max = 120): value is string { return typeof value === 'string' && value.trim().length > 0 && value.length <= max; }
@@ -53,7 +55,6 @@ function validateReview(value: unknown): ReviewInput | string {
   const reason = value.reason ?? (decision === 'allow' ? 'other-safe' : 'other-unsafe');
   if (typeof reason !== 'string' || !(reason in FEEDBACK_REASONS)) return 'Unknown feedback reason';
   if (FEEDBACK_REASONS[reason as FeedbackReason].verdict !== decision) return 'The reason does not match the verdict';
-  if (value.reviewer !== undefined && !isText(value.reviewer, 60)) return 'Reviewer name must be 1-60 characters';
   if (value.remember !== undefined && typeof value.remember !== 'boolean') return 'remember must be true or false';
   const remember = value.remember === true;
   if (value.expiresInDays !== undefined) {
@@ -62,7 +63,7 @@ function validateReview(value: unknown): ReviewInput | string {
   }
   return {
     decision, note: value.note.trim(), reason: reason as FeedbackReason,
-    reviewer: typeof value.reviewer === 'string' ? value.reviewer.trim() : 'Local reviewer',
+    reviewer: '',
     remember, expiresInDays: decision === 'allow' && remember ? (value.expiresInDays as number | undefined) ?? DEFAULT_TRUST_DAYS : undefined,
   };
 }
@@ -108,6 +109,7 @@ export async function createApp(options: AppOptions = {}): Promise<CardApp> {
   const store = new StateStore(dataDir, scenarios);
   await store.init();
   if (options.seed !== false) await seed(store);
+  const auth = new ReviewerAuth(dataDir, options.reviewer);
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '16kb', strict: true }));
@@ -115,6 +117,10 @@ export async function createApp(options: AppOptions = {}): Promise<CardApp> {
   app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
   app.get('/api/state', (_req, res) => res.json(store.appState()));
   app.get('/api/export', (_req, res) => res.type('application/json').send(store.exportAudit()));
+  app.get('/api/auth/status', (req, res) => res.json(auth.status(req)));
+  app.post('/api/auth/setup', (req, res) => auth.setup(req, res));
+  app.post('/api/auth/unlock', (req, res) => auth.unlock(req, res));
+  app.post('/api/auth/lock', (req, res) => auth.lock(req, res));
   app.post('/api/evaluate', async (req, res, next) => {
     try {
       const request = validateRequest(req.body);
@@ -127,22 +133,23 @@ export async function createApp(options: AppOptions = {}): Promise<CardApp> {
       return res.status(201).json(await evaluate(store, request));
     } catch (error) { next(error); }
   });
-  app.patch('/api/policy', async (req, res, next) => {
+  app.patch('/api/policy', auth.require, async (req, res, next) => {
     try { const policy = validatePolicy(req.body); if (!policy) return res.status(400).json({ error: 'Invalid policy thresholds' }); return res.json(await store.setPolicy(policy)); } catch (error) { next(error); }
   });
-  app.post('/api/reviews/:id', async (req, res, next) => {
+  app.post('/api/reviews/:id', auth.require, async (req, res, next) => {
     try {
       const input = validateReview(req.body);
       if (typeof input === 'string') return res.status(400).json({ error: input });
-      const result = await store.review(req.params.id, input);
+      // The reviewer is whoever holds the signed-in session, never a name typed into the request.
+      const result = await store.review(String(req.params.id), { ...input, reviewer: auth.reviewerFor(req)! });
       if (!result.ok) return res.status(result.status).json({ error: result.error });
       return res.json(result.evaluation);
     } catch (error) { next(error); }
   });
-  app.post('/api/rules/:id/revoke', async (req, res, next) => {
+  app.post('/api/rules/:id/revoke', auth.require, async (req, res, next) => {
     try {
       if (!isObject(req.body) || !isText(req.body.note, 500)) return res.status(400).json({ error: 'A revocation note is required' });
-      const result = await store.revokeRule(req.params.id, req.body.note.trim());
+      const result = await store.revokeRule(String(req.params.id), req.body.note.trim());
       if (result === 'not-found') return res.status(404).json({ error: 'Rule not found' });
       if (result === 'already-revoked') return res.status(409).json({ error: 'Rule is already revoked' });
       return res.json(result);
@@ -168,13 +175,16 @@ export async function createApp(options: AppOptions = {}): Promise<CardApp> {
     if (error instanceof SyntaxError) return res.status(400).json({ error: 'Malformed JSON' });
     console.error(error); return res.status(500).json({ error: 'Internal server error' });
   });
-  return { app, store };
+  return { app, store, auth };
 }
 
 async function start() {
-  const { app } = await createApp();
+  const { app, auth } = await createApp();
   const port = Number(process.env.PORT ?? 4318);
-  app.listen(port, '127.0.0.1', () => console.log(`CARD API listening at http://127.0.0.1:${port}`));
+  app.listen(port, '127.0.0.1', () => {
+    console.log(`CARD API listening at http://127.0.0.1:${port}`);
+    if (auth.setupCode) console.log(`No reviewer PIN yet. Open the dashboard and use this one-time setup code: ${auth.setupCode}`);
+  });
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) void start();
